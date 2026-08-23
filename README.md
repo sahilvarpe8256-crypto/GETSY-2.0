@@ -1,59 +1,39 @@
-# GETSY 2.0
+## Git Workflow
 
-AI-powered local shop discovery and smart commerce platform.
+GETSY 2.0 uses a branch-based development workflow.
 
-## What is GETSY?
+### Main Branch
 
-GETSY is a platform that helps customers discover nearby local shops and products.
+`main` contains the stable integrated version of the project.
 
-The goal is to connect local businesses with customers through:
+Team members should not directly develop on `main`.
 
-- Local shop discovery
-- Product search
-- AI-powered search
-- Location-based results
-- Map integration
-- Smart product and shop discovery
+### Development Branches
 
-## Features
+Each team member works on a dedicated branch:
 
-- User registration and login
-- Shop registration
-- Product management
-- Local shop discovery
-- Product search
-- AI-powered search
-- Map and location integration
-- Nearby shop discovery
-- Customer and shop-owner features
+- `feature/frontend` → Frontend development
+- `feature/backend` → Backend and API development
+- `feature/database` → Database development
+- `feature/integration` → Integration, testing and documentation
 
-## Technology Stack
-
-The final technology stack will be documented here before development begins.
-
-Main areas:
-
-- Frontend
-- Backend
-- Database
-- AI services
-- Maps and location services
-- Authentication
-- Deployment
-
-## Project Architecture
+### Basic Workflow
 
 ```text
-Customer
-    ↓
-Frontend
-    ↓
-Backend API
-    ↓
-Database
-
-        ↓
-   AI Services
-
-        ↓
-Maps / Location Services
+Clone repository
+      ↓
+Switch to assigned branch
+      ↓
+Build your assigned feature
+      ↓
+Test your changes
+      ↓
+Commit changes
+      ↓
+Push branch to GitHub
+      ↓
+Create Pull Request
+      ↓
+Team leader reviews
+      ↓
+Merge into main
