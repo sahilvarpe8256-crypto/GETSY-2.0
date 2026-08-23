@@ -1,11 +1,10 @@
 # Dependencies
 node_modules/
 
-# Environment variables
+# Environment variables and secrets
 .env
-.env.local
-.env.development
-.env.production
+.env.*
+!.env.example
 
 # Build output
 dist/
@@ -15,7 +14,11 @@ build/
 *.log
 logs/
 
-# OS files
+# Temporary files
+*.tmp
+*.temp
+
+# Operating system files
 .DS_Store
 Thumbs.db
 
@@ -23,6 +26,9 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Temporary files
-*.tmp
-*.temp
+# Test coverage
+coverage/
+
+# Cache
+.cache/
+.parcel-cache/
