@@ -1,77 +1,112 @@
 # GETSY 2.0 Architecture
 
-## 1. Project Overview
+## 1. Overview
 
 GETSY 2.0 is an AI-powered local shop discovery and smart commerce platform.
 
 The platform connects customers with nearby local shops and products.
 
-## 2. Main Architecture
+## 2. Core Technology Stack
 
-Customer
-   ↓
-Frontend
-   ↓
-Backend API
-   ↓
-Database
+### Frontend
+- React
+- Vite
+- CSS / Tailwind CSS
+- Browser Geolocation API
 
-Additional Services:
+### Backend
+- Node.js
+- Express.js
+- REST API
+- JWT authentication
+- bcrypt password hashing
 
-Frontend
-   ├── Maps
-   ├── AI Search
-   └── Location Services
+### Database
+- MongoDB
+- Mongoose
 
-Backend
-   ├── Authentication
-   ├── Shop Management
-   ├── Product Management
-   ├── Search
-   └── AI Integration
+### Advanced Services
+- AI API for intelligent search
+- Map service for location and map functionality
 
-Database
-   ├── Users
-   ├── Shops
-   ├── Products
-   └── Customers
+### Development
+- Git
+- GitHub
+- VS Code / Antigravity
 
-## 3. Team Responsibilities
+## 3. Architecture
 
-Member 1:
-Frontend development
-
-Member 2:
-Backend and API development
-
-Member 3:
-Database design and management
-
-Member 4:
-Integration, testing and documentation
-
-## 4. Development Principle
-
-Frontend communicates with backend through defined APIs.
-
-Backend communicates with the database.
-
-Frontend should NOT directly access the database.
-
-## 5. Integration Flow
-
-Frontend
-    ↓
+Customer / Shop Owner
+        ↓
+React + Vite Frontend
+        ↓
 REST API
-    ↓
-Backend
-    ↓
-Database
+        ↓
+Node.js + Express Backend
+        ↓
+MongoDB + Mongoose
 
-Backend
-    ↓
-AI Services
+Additional services:
 
+Backend → AI Service
+Frontend → Browser Geolocation
+Frontend → Map Service
+
+## 4. Important Architecture Rule
+
+The frontend must never connect directly to MongoDB.
+
+Correct:
+
+Frontend → Backend → Database
+
+Incorrect:
+
+Frontend → Database
+
+## 5. Team Responsibilities
+
+### Member 1
 Frontend
-    ↓
-Maps / Location Services
+
+### Member 2
+Backend and APIs
+
+### Member 3
+Database and data models
+
+### Member 4
+Integration, AI, testing and documentation
+
+## 6. Main Data Models
+
+Users
+Shops
+Products
+Customers
+
+Future models:
+
+Orders
+Reviews
+Favorites
+Search History
+
+## 7. Development Principle
+
+Each layer should have a clear responsibility.
+
+Frontend:
+Presentation and user interaction.
+
+Backend:
+Business logic and API communication.
+
+Database:
+Persistent data storage.
+
+AI:
+Natural-language understanding and intelligent search.
+
+Maps:
+Location visualization and geographic functionality.
