@@ -1,0 +1,104 @@
+.footer {
+  margin-top: 64px;
+}
+
+.footer-main {
+  background: var(--bg-footer);
+  padding: 56px 0 40px;
+}
+
+.footer-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-padding);
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 48px;
+}
+
+/* Brand */
+.footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.footer-logo-text {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-white);
+}
+
+.footer-description {
+  font-size: 13.5px;
+  color: #9ca3af;
+  line-height: 1.7;
+  max-width: 280px;
+}
+
+/* Columns */
+.footer-column-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-white);
+  margin-bottom: 18px;
+}
+
+.footer-column-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.footer-column-links li a {
+  font-size: 13.5px;
+  color: #9ca3af;
+  transition: color 0.2s;
+}
+
+.footer-column-links li a:hover {
+  color: var(--text-white);
+}
+
+/* Bottom bar */
+.footer-bottom {
+  background: var(--bg-footer-bottom);
+  padding: 18px 0;
+  text-align: center;
+}
+
+.footer-bottom p {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* ============================
+   Responsive
+   ============================ */
+
+@media (max-width: 768px) {
+  .footer-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+  }
+
+  .footer-brand {
+    grid-column: 1 / -1;
+  }
+
+  .footer-description {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-inner {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .footer-main {
+    padding: 40px 0 32px;
+  }
+}
