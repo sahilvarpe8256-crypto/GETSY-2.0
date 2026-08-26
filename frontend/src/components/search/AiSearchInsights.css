@@ -1,0 +1,265 @@
+/* ============================================
+   AI Search Insights Component Styles (Phase 5D)
+   ============================================ */
+
+.ai-search-insights {
+  background: linear-gradient(135deg, #f0fdf9 0%, #f4fbf8 100%);
+  border: 1px solid #99f6e4;
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 22px;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-search-insights:hover {
+  border-color: #5eead4;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.08);
+}
+
+.ai-search-insights-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 10px;
+}
+
+.ai-search-insights-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #0f766e;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.ai-search-insights-sparkle-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #ccfbf1;
+}
+
+.ai-search-insights-sparkle-icon {
+  color: #0d9488;
+  animation: ai-pulse 2.2s infinite ease-in-out;
+}
+
+@keyframes ai-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.12);
+  }
+}
+
+.ai-search-insights-title {
+  letter-spacing: -0.01em;
+}
+
+/* Reset / Clear Button */
+.ai-search-insights-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.ai-search-insights-reset-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  transform: translateY(-0.5px);
+}
+
+.ai-search-insights-reset-btn:focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+}
+
+.ai-search-insights-reset-btn:active {
+  transform: translateY(0);
+}
+
+/* Chips container */
+.ai-search-insights-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Individual Chip Base */
+.ai-insight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 11px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.ai-insight-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+}
+
+.ai-insight-chip-icon {
+  flex-shrink: 0;
+}
+
+.ai-insight-chip-hash {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #0d9488;
+  line-height: 1;
+}
+
+.ai-insight-chip-text {
+  line-height: 1.2;
+}
+
+.ai-insight-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transition: background 0.15s ease, color 0.15s ease;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+.ai-insight-chip-remove:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.ai-insight-chip-remove:focus-visible {
+  outline: 2px solid #ef4444;
+  outline-offset: 1px;
+}
+
+/* Category Chip Variant */
+.ai-insight-chip--category {
+  border-color: #a7f3d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.ai-insight-chip--category .ai-insight-chip-icon {
+  color: #16a34a;
+}
+
+.ai-insight-chip--category:hover {
+  border-color: #6ee7b7;
+}
+
+/* Price Chip Variant */
+.ai-insight-chip--price {
+  border-color: #fed7aa;
+  background: #fffbeb;
+  color: #9a3412;
+}
+
+.ai-insight-chip--price .ai-insight-chip-icon {
+  color: #ea580c;
+}
+
+.ai-insight-chip--price:hover {
+  border-color: #fdba74;
+}
+
+/* Keyword Chip Variant */
+.ai-insight-chip--keyword {
+  border-color: #ccfbf1;
+  background: #ffffff;
+  color: #115e59;
+}
+
+.ai-insight-chip--keyword:hover {
+  border-color: #5eead4;
+}
+
+/* Location Chip Variant */
+.ai-insight-chip--location {
+  border-color: #bae6fd;
+  background: #f0f9ff;
+  color: #0369a1;
+}
+
+.ai-insight-chip--location .ai-insight-chip-icon {
+  color: #0284c7;
+}
+
+.ai-insight-chip--location:hover {
+  border-color: #7dd3fc;
+}
+
+/* ============================================
+   Accessibility & Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-search-insights,
+  .ai-insight-chip,
+  .ai-search-insights-sparkle-icon,
+  .ai-search-insights-reset-btn {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* ============================================
+   Responsive Adaptations
+   ============================================ */
+
+@media (max-width: 640px) {
+  .ai-search-insights {
+    padding: 12px 14px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+  }
+
+  .ai-search-insights-header {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .ai-search-insights-title {
+    font-size: 0.82rem;
+  }
+
+  .ai-insight-chip {
+    font-size: 0.78rem;
+    padding: 4px 6px 4px 9px;
+  }
+}

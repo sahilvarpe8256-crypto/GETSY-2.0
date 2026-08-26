@@ -1,5 +1,5 @@
 /* ============================================
-   Search Page Styles
+   Search Page Styles (Phase 5D Polish)
    ============================================ */
 
 .search-page {
@@ -18,21 +18,29 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 14px;
+  padding: 10px 16px;
   border-radius: var(--radius-sm, 8px);
   background: var(--bg-white, #ffffff);
   border: 1px solid var(--border-light, #e5e7eb);
   color: var(--text-body, #374151);
   font-weight: 600;
   font-size: 0.88rem;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
   cursor: pointer;
   flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .search-back-btn:hover {
-  background: #f3f4f6;
+  background: #f8fafc;
   color: var(--text-heading, #111827);
+  border-color: #cbd5e1;
+  transform: translateX(-1px);
+}
+
+.search-back-btn:focus-visible {
+  outline: 2px solid var(--primary, #0e8c7f);
+  outline-offset: 2px;
 }
 
 .search-bar-container {
@@ -46,11 +54,12 @@
   justify-content: space-between;
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
-  padding: 10px 16px;
-  border-radius: 10px;
+  padding: 11px 18px;
+  border-radius: 12px;
   margin-bottom: 20px;
   font-size: 0.88rem;
   color: #166534;
+  box-shadow: 0 1px 2px rgba(22, 101, 52, 0.04);
 }
 
 .search-location-info {
@@ -61,20 +70,30 @@
 
 .search-location-pin {
   color: #16a34a;
+  flex-shrink: 0;
 }
 
 .search-set-location-btn {
   background: #16a34a;
   color: #ffffff;
-  padding: 5px 12px;
-  border-radius: 6px;
+  padding: 6px 14px;
+  border-radius: 7px;
   font-weight: 600;
   font-size: 0.8rem;
-  transition: background 0.15s ease;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(22, 163, 74, 0.15);
 }
 
 .search-set-location-btn:hover {
   background: #15803d;
+  transform: translateY(-1px);
+}
+
+.search-set-location-btn:focus-visible {
+  outline: 2px solid #15803d;
+  outline-offset: 2px;
 }
 
 /* Categories Bar */
@@ -84,61 +103,202 @@
   gap: 10px;
   overflow-x: auto;
   padding-bottom: 8px;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
   scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
 .search-categories-bar::-webkit-scrollbar {
   height: 4px;
 }
 
-.search-categories-bar::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
+.search-categories-bar::-webkit-scrollbar-track {
+  background: #f1f5f9;
   border-radius: 4px;
 }
 
-/* Summary */
+.search-categories-bar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* Summary Header */
 .search-results-summary {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
   border-bottom: 1px solid var(--border-light, #e5e7eb);
   padding-bottom: 14px;
   flex-wrap: wrap;
+  gap: 12px;
+}
+
+.search-results-title-group {
+  display: flex;
+  align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .search-results-title {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: var(--text-heading, #111827);
+  letter-spacing: -0.01em;
+}
+
+/* AI Badge */
+.search-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #f0fdf9 0%, #ecfdf5 100%);
+  border: 1px solid #99f6e4;
+  color: #0f766e;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 3px rgba(13, 148, 136, 0.1);
+}
+
+.search-ai-badge-icon {
+  color: #0d9488;
+  animation: ai-pulse 2.2s infinite ease-in-out;
 }
 
 .search-results-count {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--text-muted, #6b7280);
+  font-weight: 500;
 }
 
-/* Skeleton */
+/* Structured Skeleton Grid & Cards */
 .search-skeleton-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
 }
 
+.product-skeleton-card {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.skeleton-img {
+  width: 100%;
+  height: 200px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+.skeleton-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+.skeleton-line--title {
+  width: 75%;
+  height: 18px;
+}
+
+.skeleton-line--subtitle {
+  width: 50%;
+  height: 12px;
+}
+
+.skeleton-line--price {
+  width: 38%;
+  height: 16px;
+  margin-top: 4px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ============================================
+   Accessibility & Reduced Motion
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-img,
+  .skeleton-line,
+  .search-ai-badge-icon,
+  .search-back-btn,
+  .search-set-location-btn {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .skeleton-img,
+  .skeleton-line {
+    background: #f1f5f9 !important;
+  }
+}
+
+/* ============================================
+   Responsive Adaptations
+   ============================================ */
+
 @media (max-width: 1024px) {
   .search-skeleton-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
   }
 }
 
 @media (max-width: 640px) {
+  .search-page {
+    padding: 20px 0 60px;
+  }
+
   .search-page-header {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
+
+  .search-back-btn {
+    align-self: flex-start;
+    padding: 8px 14px;
+  }
+
+  .search-location-bar {
+    padding: 10px 14px;
+    font-size: 0.82rem;
+  }
+
   .search-skeleton-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .search-results-title {
+    font-size: 1.18rem;
   }
 }
