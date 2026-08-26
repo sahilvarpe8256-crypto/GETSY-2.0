@@ -25,6 +25,12 @@
   color: var(--text-muted);
 }
 
+.discover-shops-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .discover-shops-count {
   font-size: 12px;
   font-weight: 500;
@@ -35,6 +41,24 @@
   padding: 5px 14px;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+.discover-shops-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-light);
+  transition: all 0.15s ease;
+}
+
+.discover-shops-view-all:hover {
+  background: var(--primary);
+  color: #ffffff;
 }
 
 

@@ -116,6 +116,17 @@ export default function Navbar({ onOpenLocationModal }) {
           </NavLink>
 
           <NavLink
+            to="/shops"
+            className={({ isActive }) =>
+              `navbar-link ${isActive ? 'navbar-link--active' : ''}`
+            }
+            id="nav-shops"
+          >
+            <Store size={16} />
+            <span>Shops</span>
+          </NavLink>
+
+          <NavLink
             to="/search"
             className={({ isActive }) =>
               `navbar-link ${isActive ? 'navbar-link--active' : ''}`

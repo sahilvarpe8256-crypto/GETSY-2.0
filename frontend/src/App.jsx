@@ -11,6 +11,8 @@ import Home from './pages/Home/Home';
 import Categories from './pages/Categories/Categories';
 import Search from './pages/Search/Search';
 import Product from './pages/Product/Product';
+import Shops from './pages/Shops/Shops';
+import ShopDetail from './pages/ShopDetail/ShopDetail';
 import Wishlist from './pages/Wishlist/Wishlist';
 import CustomerDashboard from './pages/CustomerDashboard/CustomerDashboard';
 import OwnerDashboard from './pages/OwnerDashboard/OwnerDashboard';
@@ -29,6 +31,9 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/categories" element={<Categories />} />
+              <Route path="/shops" element={<Shops />} />
+              <Route path="/shops/:id" element={<ShopDetail />} />
+              <Route path="/shop/:id" element={<ShopDetail />} />
               <Route path="/search" element={<Search />} />
               <Route path="/product/:id" element={<Product />} />
               <Route path="/wishlist" element={<Wishlist />} />

@@ -405,7 +405,16 @@ export function filterProducts({ category, search, shopId, minPrice, maxPrice, s
   }
 
   if (shopId) {
-    list = list.filter((p) => p.shopId === shopId);
+    const sId = String(shopId).toLowerCase().trim();
+    list = list.filter((p) => {
+      const pShopId = String(p.shopId).toLowerCase().trim();
+      return (
+        pShopId === sId ||
+        pShopId === `shop-${sId}` ||
+        `shop-${pShopId}` === sId ||
+        (pShopId.startsWith('shop-') && pShopId.replace('shop-', '') === sId)
+      );
+    });
   }
 
   if (search && search.trim()) {
