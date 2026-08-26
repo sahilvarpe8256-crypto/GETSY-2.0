@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ============================================
+   GETSY Design System
+   Colors and values extracted from design-reference screenshots
+   ============================================ */
+
+:root {
+  /* Primary teal — from buttons, active pills, nav accents */
+  --primary: #0e8c7f;
+  --primary-dark: #0a7269;
+  --primary-hover: #0c7e72;
+  --primary-light: #e6f4f0;
+
+  /* Hero section background gradient — light mint teal */
+  --hero-bg-start: #e6f7f2;
+  --hero-bg-mid: #d5f0e8;
+  --hero-bg-end: #c5ebe0;
+
+  /* Verified badge */
+  --verified-green: #16a34a;
+
+  /* Ratings / accents */
+  --accent-amber: #f59e0b;
+
+  /* Backgrounds */
+  --bg-page: #f7f8fa;
+  --bg-white: #ffffff;
+  --bg-footer: #1a2432;
+  --bg-footer-bottom: #141c28;
+
+  /* Text */
+  --text-heading: #111827;
+  --text-body: #374151;
+  --text-muted: #6b7280;
+  --text-light: #9ca3af;
+  --text-white: #ffffff;
+
+  /* Borders */
+  --border-light: #e5e7eb;
+  --border-input: #d1d5db;
+
+  /* Border radius — from screenshot card/button shapes */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 50px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.10);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.18);
+
+  /* Layout */
+  --max-width: 1200px;
+  --navbar-height: 60px;
+  --page-padding: 24px;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ============================================
+   Reset & Base
+   ============================================ */
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-page);
+  color: var(--text-body);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  background: none;
+}
+
+input {
+  font-family: inherit;
+  outline: none;
+  border: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+/* ============================================
+   Utility: Container
+   ============================================ */
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-padding);
+}

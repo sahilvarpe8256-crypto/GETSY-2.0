@@ -1,0 +1,38 @@
+.home {
+  padding-bottom: 32px;
+}
+
+/* Search + categories section */
+.home-search-section {
+  max-width: var(--max-width);
+  margin: 36px auto 40px;
+  padding: 0 var(--page-padding);
+}
+
+.home-categories {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+/* ============================
+   Responsive
+   ============================ */
+
+@media (max-width: 768px) {
+  .home-search-section {
+    margin: 24px auto 32px;
+  }
+
+  .home-categories {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-search-section {
+    margin: 20px auto 24px;
+  }
+}

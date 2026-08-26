@@ -1,0 +1,73 @@
+.discover-shops {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-padding);
+}
+
+/* Header row */
+.discover-shops-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.discover-shops-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-heading);
+  letter-spacing: -0.3px;
+  margin-bottom: 4px;
+}
+
+.discover-shops-subtitle {
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.discover-shops-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-pill);
+  padding: 5px 14px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+
+/* Grid — 4 columns matching screenshot */
+.discover-shops-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+/* ============================
+   Responsive
+   ============================ */
+
+@media (max-width: 1024px) {
+  .discover-shops-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .discover-shops-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .discover-shops-title {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .discover-shops-grid {
+    grid-template-columns: 1fr;
+  }
+}
