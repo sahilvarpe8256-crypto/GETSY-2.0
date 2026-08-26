@@ -1,0 +1,22 @@
+{
+  "name": "getsy-ai",
+  "version": "1.0.0",
+  "description": "GETSY 2.0 AI Search Module — standalone rule-based NLP query parser",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest --verbose",
+    "demo": "node demo.js"
+  },
+  "keywords": [
+    "getsy",
+    "ai",
+    "search",
+    "nlp",
+    "parser"
+  ],
+  "author": "GETSY Team — Member 4",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
