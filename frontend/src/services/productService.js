@@ -1,6 +1,50 @@
-import { products as mockProducts, getProductById as getMockProductById, filterProducts as filterMockProducts } from '../data/products';
+import { products as baseProducts, getProductById as getBaseProductById, filterProducts as filterBaseProducts } from '../data/products';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const LOCAL_PRODUCTS_KEY = 'getsy_custom_products';
+const DELETED_PRODUCTS_KEY = 'getsy_deleted_product_ids';
+
+/**
+ * Retrieve local customized products from localStorage
+ */
+function getLocalCustomProducts() {
+  try {
+    const raw = localStorage.getItem(LOCAL_PRODUCTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Retrieve deleted product IDs from localStorage
+ */
+function getDeletedProductIds() {
+  try {
+    const raw = localStorage.getItem(DELETED_PRODUCTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Get merged products (base demo products + custom added/edited products - deleted products)
+ */
+export function getAllMergedProducts() {
+  const custom = getLocalCustomProducts();
+  const deleted = getDeletedProductIds();
+
+  // Filter base products not deleted and not overridden by custom
+  const customIds = new Set(custom.map((p) => p.id));
+  const activeBase = baseProducts.filter(
+    (p) => !deleted.includes(p.id) && !customIds.has(p.id)
+  );
+
+  const activeCustom = custom.filter((p) => !deleted.includes(p.id));
+
+  return [...activeCustom, ...activeBase];
+}
 
 /**
  * Helper to fetch with timeout
@@ -43,10 +87,43 @@ export async function getProducts(params = {}) {
       }
     }
   } catch {
-    // Graceful fallback to mock data
+    // Graceful fallback to merged local products
   }
 
-  return filterMockProducts(params);
+  const all = getAllMergedProducts();
+  let list = [...all];
+
+  if (params.category && params.category !== 'all') {
+    const norm = params.category.toLowerCase().trim();
+    list = list.filter((p) => p.category?.toLowerCase() === norm);
+  }
+
+  if (params.shopId) {
+    const sId = String(params.shopId).toLowerCase().trim();
+    list = list.filter((p) => {
+      const pShopId = String(p.shopId).toLowerCase().trim();
+      return (
+        pShopId === sId ||
+        pShopId === `shop-${sId}` ||
+        `shop-${pShopId}` === sId ||
+        (pShopId.startsWith('shop-') && pShopId.replace('shop-', '') === sId)
+      );
+    });
+  }
+
+  if (params.search && params.search.trim()) {
+    const q = params.search.toLowerCase().trim();
+    list = list.filter(
+      (p) =>
+        p.name?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q) ||
+        p.shopName?.toLowerCase().includes(q) ||
+        p.shopLocation?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q)
+    );
+  }
+
+  return list;
 }
 
 /**
@@ -65,7 +142,9 @@ export async function getProductById(id) {
     // Graceful fallback
   }
 
-  return getMockProductById(id);
+  const all = getAllMergedProducts();
+  const strId = String(id).toLowerCase();
+  return all.find((p) => String(p.id).toLowerCase() === strId || String(p._id).toLowerCase() === strId) || null;
 }
 
 /**
@@ -88,7 +167,134 @@ export async function searchProducts(searchQuery, location) {
     // Graceful fallback
   }
 
-  return filterMockProducts({ search: searchQuery });
+  return getProducts({ search: searchQuery });
+}
+
+/**
+ * Create a new product (Owner action)
+ */
+export async function createProduct(productData, token) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(productData)
+    });
+
+    if (res.ok) {
+      const created = await res.json();
+      return { success: true, product: created };
+    }
+  } catch {
+    // Local persistence fallback
+  }
+
+  const newProduct = {
+    ...productData,
+    id: productData.id || `prod-custom-${Date.now()}`,
+    createdAt: new Date().toISOString()
+  };
+
+  const custom = getLocalCustomProducts();
+  custom.unshift(newProduct);
+  try {
+    localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(custom));
+  } catch {
+    /* storage full */
+  }
+
+  return { success: true, product: newProduct, isLocal: true };
+}
+
+/**
+ * Update an existing product (Owner action)
+ */
+export async function updateProduct(id, productData, token) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(productData)
+    });
+
+    if (res.ok) {
+      const updated = await res.json();
+      return { success: true, product: updated };
+    }
+  } catch {
+    // Local persistence fallback
+  }
+
+  const custom = getLocalCustomProducts();
+  const existingIndex = custom.findIndex((p) => String(p.id) === String(id));
+
+  const updatedProduct = {
+    ...productData,
+    id: id,
+    updatedAt: new Date().toISOString()
+  };
+
+  if (existingIndex >= 0) {
+    custom[existingIndex] = updatedProduct;
+  } else {
+    custom.unshift(updatedProduct);
+  }
+
+  try {
+    localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(custom));
+  } catch {
+    /* ignore */
+  }
+
+  return { success: true, product: updatedProduct, isLocal: true };
+}
+
+/**
+ * Delete a product (Owner action)
+ */
+export async function deleteProduct(id, token) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/products/${id}`, {
+      method: 'DELETE',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      }
+    });
+
+    if (res.ok) {
+      return { success: true };
+    }
+  } catch {
+    // Local persistence fallback
+  }
+
+  // Remove from custom if present
+  let custom = getLocalCustomProducts();
+  custom = custom.filter((p) => String(p.id) !== String(id));
+  try {
+    localStorage.setItem(LOCAL_PRODUCTS_KEY, JSON.stringify(custom));
+  } catch {
+    /* ignore */
+  }
+
+  // Add to deleted IDs list
+  const deleted = getDeletedProductIds();
+  if (!deleted.includes(id)) {
+    deleted.push(id);
+    try {
+      localStorage.setItem(DELETED_PRODUCTS_KEY, JSON.stringify(deleted));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return { success: true, isLocal: true };
 }
 
 export { API_BASE_URL };

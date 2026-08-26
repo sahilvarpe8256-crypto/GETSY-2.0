@@ -1,0 +1,240 @@
+/* ============================================
+   OwnerShopProfile Page Styles
+   GETSY Design System
+   ============================================ */
+
+.owner-profile-page-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.owner-profile-form-card {
+  background: var(--bg-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  padding: 32px;
+}
+
+.owner-profile-card-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.owner-profile-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: 4px;
+}
+
+.owner-profile-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.owner-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.owner-profile-live-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-white);
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.owner-profile-live-btn:hover {
+  background: var(--primary-light);
+}
+
+.owner-profile-photo-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.owner-photo-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-page);
+  border: 1.5px solid var(--border-input);
+  color: var(--text-heading);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.owner-photo-upload-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #f0fdf9;
+}
+
+.owner-photo-clear-btn {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #ef4444;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.owner-photo-clear-btn:hover {
+  background: #fee2e2;
+}
+
+/* Right preview card */
+.owner-profile-preview-card {
+  background: var(--bg-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  position: sticky;
+  top: 30px;
+}
+
+.owner-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 14px;
+}
+
+.owner-preview-storefront-box {
+  width: 100%;
+  height: 140px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-light);
+}
+
+.owner-preview-storefront-box .shop-card-image {
+  height: 100%;
+}
+
+.owner-preview-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.owner-preview-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.owner-preview-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-heading);
+}
+
+.owner-preview-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--verified-green);
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.owner-preview-category-tag {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-page);
+  padding: 2px 8px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+.owner-preview-desc {
+  font-size: 12.5px;
+  color: var(--text-body);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.owner-preview-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-light);
+}
+
+.owner-preview-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.preview-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.owner-preview-full-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px;
+  border-radius: var(--radius-pill);
+  margin-top: 12px;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.owner-preview-full-btn:hover {
+  background: var(--primary-dark);
+}
+
+@media (max-width: 992px) {
+  .owner-profile-page-grid {
+    grid-template-columns: 1fr;
+  }
+}

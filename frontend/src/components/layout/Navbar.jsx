@@ -160,10 +160,17 @@ export default function Navbar({ onOpenLocationModal }) {
           <div className="navbar-mobile-only-section">
             {isAuthenticated ? (
               <div className="navbar-user-menu-mobile">
-                <Link to="/dashboard" className="navbar-link">
-                  <User size={16} />
-                  <span>Dashboard ({user?.name})</span>
-                </Link>
+                {user?.role === 'owner' ? (
+                  <Link to="/owner/dashboard" className="navbar-link">
+                    <Store size={16} />
+                    <span>Owner Dashboard ({user?.name})</span>
+                  </Link>
+                ) : (
+                  <Link to="/dashboard" className="navbar-link">
+                    <User size={16} />
+                    <span>Dashboard ({user?.name})</span>
+                  </Link>
+                )}
                 <button type="button" onClick={handleLogout} className="navbar-link logout-btn">
                   <LogOut size={16} />
                   <span>Log Out</span>

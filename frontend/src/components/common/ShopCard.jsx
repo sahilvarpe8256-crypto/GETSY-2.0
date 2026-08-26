@@ -2,8 +2,22 @@ import { MapPin, CheckCircle, Star, Package, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './ShopCard.css';
 
-export function ShopImage({ type, name }) {
-  if (type === 'footwear') {
+export function ShopImage({ type, name, imageType, shopName, image }) {
+  const finalType = (type || imageType || 'footwear').toLowerCase().trim();
+  const finalName = name || shopName || '';
+
+  if (image) {
+    return (
+      <img
+        src={image}
+        alt={finalName || 'Storefront'}
+        className="shop-card-svg"
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      />
+    );
+  }
+
+  if (finalType === 'footwear') {
     return (
       <svg className="shop-card-svg" viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="400" height="250" fill="#182330" />
@@ -11,7 +25,7 @@ export function ShopImage({ type, name }) {
         {/* Store Signboard */}
         <rect x="35" y="30" width="330" height="44" fill="#0f172a" rx="4" stroke="#334155" strokeWidth="1" />
         <text x="50" y="58" fill="#10b981" fontSize="15" fontWeight="800" letterSpacing="2">
-          {name ? name.toUpperCase().slice(0, 24) : 'FOOTWEAR BOUTIQUE'}
+          {finalName ? finalName.toUpperCase().slice(0, 24) : 'FOOTWEAR BOUTIQUE'}
         </text>
         {/* Glass display showroom */}
         <rect x="40" y="86" width="320" height="124" fill="#f8fafc" rx="4" />
@@ -32,7 +46,7 @@ export function ShopImage({ type, name }) {
     );
   }
 
-  if (type === 'ornaments') {
+  if (finalType === 'ornaments') {
     return (
       <svg className="shop-card-svg" viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="400" height="250" fill="#201311" />
@@ -40,7 +54,7 @@ export function ShopImage({ type, name }) {
         {/* Gold Trim Store Sign */}
         <rect x="35" y="30" width="330" height="44" fill="#1b0c09" rx="4" stroke="#f59e0b" strokeWidth="1" />
         <text x="50" y="58" fill="#f59e0b" fontSize="15" fontWeight="800" letterSpacing="2">
-          {name ? name.toUpperCase().slice(0, 24) : 'JEWELLERY & ORNAMENTS'}
+          {finalName ? finalName.toUpperCase().slice(0, 24) : 'JEWELLERY & ORNAMENTS'}
         </text>
         {/* Showroom Interior Warm Chandelier Glow */}
         <rect x="40" y="86" width="320" height="124" fill="#1c1917" rx="4" />
@@ -63,14 +77,14 @@ export function ShopImage({ type, name }) {
     );
   }
 
-  if (type === 'clothing') {
+  if (finalType === 'clothing') {
     return (
       <svg className="shop-card-svg" viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="400" height="250" fill="#182330" />
         <rect x="25" y="20" width="350" height="200" rx="6" fill="#2d3748" />
         <rect x="35" y="30" width="330" height="42" fill="#1a202c" rx="4" />
         <text x="50" y="56" fill="#e2e8f0" fontSize="15" fontWeight="700" letterSpacing="2">
-          {name ? name.toUpperCase().slice(0, 24) : 'PUNE TRENDS'}
+          {finalName ? finalName.toUpperCase().slice(0, 24) : 'PUNE TRENDS'}
         </text>
         {/* Storefront large glass windows with warm glow */}
         <rect x="40" y="82" width="150" height="128" fill="#fed7aa" opacity="0.85" rx="2" />
@@ -92,14 +106,14 @@ export function ShopImage({ type, name }) {
     );
   }
 
-  if (type === 'hardware') {
+  if (finalType === 'hardware') {
     return (
       <svg className="shop-card-svg" viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="400" height="250" fill="#1e293b" />
         <rect x="25" y="20" width="350" height="200" rx="6" fill="#334155" />
         <rect x="35" y="30" width="330" height="42" fill="#0f172a" rx="4" />
         <text x="50" y="56" fill="#38bdf8" fontSize="15" fontWeight="800" letterSpacing="2">
-          {name ? name.toUpperCase().slice(0, 24) : 'HARDWARE TRADERS'}
+          {finalName ? finalName.toUpperCase().slice(0, 24) : 'HARDWARE TRADERS'}
         </text>
         <rect x="40" y="82" width="320" height="128" fill="#e2e8f0" rx="4" />
         {/* Tool racks and machinery */}
@@ -117,7 +131,7 @@ export function ShopImage({ type, name }) {
     );
   }
 
-  if (type === 'furniture') {
+  if (finalType === 'furniture') {
     return (
       <svg className="shop-card-svg" viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="400" height="250" fill="#f1f5f9" />
@@ -139,7 +153,7 @@ export function ShopImage({ type, name }) {
     );
   }
 
-  if (type === 'grocery') {
+  if (finalType === 'grocery') {
     return (
       <svg className="shop-card-svg" viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="400" height="250" fill="#0f172a" />
@@ -159,7 +173,7 @@ export function ShopImage({ type, name }) {
     );
   }
 
-  if (type === 'electronics') {
+  if (finalType === 'electronics') {
     return (
       <svg className="shop-card-svg" viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="400" height="250" fill="#0f172a" />
@@ -168,7 +182,7 @@ export function ShopImage({ type, name }) {
         <text x="32" y="48" fill="#ffffff" fontSize="10" fontWeight="700">MULTI-BRAND</text>
         <rect x="135" y="25" width="130" height="40" fill="#172554" />
         <text x="145" y="49" fill="#ffffff" fontSize="12" fontWeight="800" letterSpacing="1">
-          {name ? name.toUpperCase().slice(0, 16) : 'NASHIK DIGITAL'}
+          {finalName ? finalName.toUpperCase().slice(0, 16) : 'NASHIK DIGITAL'}
         </text>
         <rect x="270" y="25" width="105" height="40" fill="#1e40af" />
         <text x="285" y="48" fill="#ffffff" fontSize="11" fontWeight="700">STORE</text>
@@ -190,7 +204,7 @@ export function ShopImage({ type, name }) {
       <rect width="400" height="250" fill="#0f172a" />
       <rect x="20" y="20" width="360" height="50" rx="4" fill="#0e8c7f" />
       <text x="35" y="50" fill="#ffffff" fontSize="14" fontWeight="800" letterSpacing="1">
-        {name ? name.toUpperCase().slice(0, 24) : 'LOCAL STORE'}
+        {finalName ? finalName.toUpperCase().slice(0, 24) : 'LOCAL STORE'}
       </text>
       <rect x="25" y="75" width="350" height="145" fill="#f8fafc" />
       <circle cx="100" cy="140" r="28" fill="#0e8c7f" opacity="0.2" />

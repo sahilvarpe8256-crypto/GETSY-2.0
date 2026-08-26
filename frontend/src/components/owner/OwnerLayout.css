@@ -1,0 +1,349 @@
+/* ============================================
+   OwnerLayout Styles
+   GETSY Design System
+   ============================================ */
+
+.owner-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-page);
+  position: relative;
+}
+
+/* Mobile Header */
+.owner-mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--navbar-height);
+  background: var(--bg-white);
+  border-bottom: 1px solid var(--border-light);
+  padding: 0 16px;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 50;
+}
+
+.owner-mobile-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.owner-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #e6f7f2;
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.owner-mobile-toggle {
+  padding: 8px;
+  color: var(--text-heading);
+  cursor: pointer;
+}
+
+/* Sidebar */
+.owner-sidebar {
+  width: 270px;
+  background: var(--bg-white);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.owner-sidebar-brand-section {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.owner-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.owner-logo-img {
+  height: 28px;
+  width: auto;
+  object-fit: contain;
+}
+
+.owner-logo-text {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-heading);
+  letter-spacing: -0.5px;
+}
+
+.owner-portal-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 2px;
+}
+
+/* Shop Card Badge in Sidebar */
+.owner-shop-card-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+}
+
+.owner-shop-icon-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.owner-shop-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.owner-shop-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.owner-shop-status-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.owner-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--verified-green);
+}
+
+.owner-status-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Sidebar Nav */
+.owner-sidebar-nav {
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.owner-nav-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-light);
+  padding: 6px 12px 4px;
+}
+
+.owner-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--text-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.owner-nav-item:hover {
+  background: var(--bg-page);
+  color: var(--primary);
+}
+
+.owner-nav-item--active {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.owner-nav-item--external {
+  color: var(--primary);
+}
+
+.owner-external-arrow {
+  margin-left: auto;
+  opacity: 0.6;
+}
+
+.owner-nav-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 10px 12px;
+}
+
+/* Sidebar Footer */
+.owner-sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-white);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.owner-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.owner-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.owner-user-details {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.owner-user-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.owner-user-email {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.owner-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  color: #ef4444;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: #fef2f2;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.owner-logout-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Main Content Area */
+.owner-main-content {
+  flex: 1;
+  margin-left: 270px;
+  padding: 32px 36px 60px;
+  display: flex;
+  flex-direction: column;
+}
+
+.owner-page-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.owner-page-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-heading);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.owner-content-body {
+  width: 100%;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 992px) {
+  .owner-mobile-header {
+    display: flex;
+  }
+
+  .owner-sidebar {
+    transform: translateX(-100%);
+    top: var(--navbar-height);
+  }
+
+  .owner-sidebar--open {
+    transform: translateX(0);
+  }
+
+  .owner-mobile-backdrop {
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 35;
+  }
+
+  .owner-main-content {
+    margin-left: 0;
+    margin-top: var(--navbar-height);
+    padding: 20px 16px 40px;
+  }
+}

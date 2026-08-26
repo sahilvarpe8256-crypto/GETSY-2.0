@@ -1,0 +1,334 @@
+/* ============================================
+   OwnerProducts Page Styles
+   GETSY Design System
+   ============================================ */
+
+.owner-products-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.owner-action-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #bbf7d0;
+  animation: fadeIn 0.2s ease-in;
+}
+
+/* Toolbar */
+.owner-products-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.owner-toolbar-search-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-white);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  flex: 1;
+  min-width: 260px;
+  max-width: 480px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.owner-toolbar-search-wrap:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(14, 140, 127, 0.15);
+}
+
+.owner-toolbar-search-icon {
+  color: var(--text-muted);
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.owner-toolbar-search-input {
+  flex: 1;
+  font-size: 13.5px;
+  color: var(--text-heading);
+  background: transparent;
+  width: 100%;
+}
+
+.owner-search-clear-btn {
+  color: var(--text-light);
+  padding: 2px;
+  cursor: pointer;
+}
+
+.owner-search-clear-btn:hover {
+  color: var(--text-heading);
+}
+
+.owner-toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.owner-toolbar-select {
+  background: var(--bg-white);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-body);
+  outline: none;
+  cursor: pointer;
+}
+
+.owner-toolbar-select:focus {
+  border-color: var(--primary);
+}
+
+.owner-products-count-tag {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+/* Table Card */
+.owner-products-table-card {
+  background: var(--bg-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.owner-loading-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--primary);
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.owner-empty-state-box {
+  text-align: center;
+  padding: 60px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.owner-empty-state-box h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 12px 0 6px;
+}
+
+.owner-empty-state-box p {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  max-width: 400px;
+}
+
+.owner-reset-filters-btn {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.owner-reset-filters-btn:hover {
+  text-decoration: underline;
+}
+
+.owner-price-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.owner-orig-price {
+  font-size: 11px;
+  color: var(--text-light);
+  text-decoration: line-through;
+}
+
+.owner-pickup-tag {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.owner-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.owner-action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid var(--border-light);
+  text-decoration: none;
+}
+
+.owner-action-icon-btn.edit-btn {
+  background: var(--bg-page);
+  color: var(--text-body);
+}
+
+.owner-action-icon-btn.edit-btn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.owner-action-icon-btn.delete-btn {
+  background: #fef2f2;
+  color: #ef4444;
+  border-color: #fee2e2;
+}
+
+.owner-action-icon-btn.delete-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* Modal Dialog */
+.owner-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.owner-modal-card {
+  background: var(--bg-white);
+  border-radius: var(--radius-lg);
+  max-width: 440px;
+  width: 100%;
+  padding: 24px;
+  box-shadow: var(--shadow-modal);
+  animation: modalScale 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.owner-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.owner-modal-danger-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.owner-modal-close {
+  color: var(--text-light);
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.owner-modal-close:hover {
+  color: var(--text-heading);
+}
+
+.owner-modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: 8px;
+}
+
+.owner-modal-desc {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.owner-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.owner-modal-cancel-btn {
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
+  color: var(--text-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.owner-modal-cancel-btn:hover {
+  background: #e2e8f0;
+}
+
+.owner-modal-delete-btn {
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.owner-modal-delete-btn:hover {
+  background: #dc2626;
+}
