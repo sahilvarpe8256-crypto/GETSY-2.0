@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import './SearchBar.css';
 
-export default function SearchBar({ onSearch }) {
-  const [query, setQuery] = useState('');
+export default function SearchBar({ onSearch, value: propValue = '' }) {
+  const [query, setQuery] = useState(propValue);
+
+  useEffect(() => {
+    if (propValue !== undefined) {
+      setQuery(propValue);
+    }
+  }, [propValue]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
