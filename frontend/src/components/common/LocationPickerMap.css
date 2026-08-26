@@ -1,0 +1,228 @@
+/* ============================================
+   LocationPickerMap Styles
+   GETSY Design System
+   ============================================ */
+
+.location-picker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.location-picker-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.location-picker-gps-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-white);
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.location-picker-gps-btn:hover:not(:disabled) {
+  background: var(--primary-light);
+}
+
+.location-picker-gps-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.location-picker-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.location-picker-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fef2f2;
+  color: #ef4444;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #fee2e2;
+}
+
+/* Map Canvas */
+.location-picker-canvas {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1.5px solid var(--border-light);
+  cursor: crosshair;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.location-picker-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Anchor Dots */
+.location-picker-anchor-dot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  z-index: 10;
+  transition: transform 0.15s ease;
+}
+
+.location-picker-anchor-dot:hover {
+  transform: translate(-50%, -50%) scale(1.15);
+}
+
+.anchor-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #64748b;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+.anchor-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--text-heading);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Selected Pin */
+.location-picker-pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 20;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.location-picker-pin-bubble {
+  filter: drop-shadow(0 4px 8px rgba(14, 140, 127, 0.4));
+  animation: pinBounce 0.4s ease;
+}
+
+@keyframes pinBounce {
+  0% { transform: translateY(-12px); }
+  60% { transform: translateY(2px); }
+  100% { transform: translateY(0); }
+}
+
+.location-picker-pin-shadow {
+  width: 12px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  margin-top: -2px;
+}
+
+/* Footer Bar */
+.location-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.location-picker-selected-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selected-info-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.selected-info-text strong {
+  color: var(--text-heading);
+}
+
+.selected-info-text span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* Pills Row */
+.location-picker-pills-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.pills-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.pills-scroll {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.picker-pill-btn {
+  background: var(--bg-white);
+  border: 1px solid var(--border-light);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-body);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.picker-pill-btn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.picker-pill-btn--active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}

@@ -1,7 +1,41 @@
-import { shops as mockShops, getShopById as getMockShopById, filterShops as filterMockShops } from '../data/shops';
+import { shops as baseShops, getShopById as getBaseShopById, filterShops as filterBaseShops } from '../data/shops';
 import { getProducts } from './productService';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const LOCAL_SHOPS_KEY = 'getsy_custom_shops';
+
+/**
+ * Retrieve custom local shop updates from localStorage
+ */
+function getLocalCustomShops() {
+  try {
+    const raw = localStorage.getItem(LOCAL_SHOPS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Get merged shops (base shops + custom updates)
+ */
+export function getAllMergedShops() {
+  const customShops = getLocalCustomShops();
+  const baseIds = new Set(baseShops.map((s) => s.id));
+
+  // Base shops with any local custom updates applied
+  const mergedBase = baseShops.map((shop) => {
+    const override = customShops[shop.id];
+    return override ? { ...shop, ...override } : shop;
+  });
+
+  // Any newly created custom registered shops not present in baseShops
+  const customOnly = Object.values(customShops).filter(
+    (s) => s && s.id && !baseIds.has(s.id)
+  );
+
+  return [...customOnly, ...mergedBase];
+}
 
 /**
  * Helper to fetch with timeout
@@ -46,7 +80,39 @@ export async function getShops(params = {}) {
     // Graceful fallback to mock data
   }
 
-  return filterMockShops(params);
+  const merged = getAllMergedShops();
+  let list = [...merged];
+
+  if (params.category && params.category !== 'all') {
+    const normCat = params.category.toLowerCase().trim();
+    list = list.filter((s) => s.category?.toLowerCase() === normCat);
+  }
+
+  if (params.search && params.search.trim()) {
+    const q = params.search.toLowerCase().trim();
+    list = list.filter(
+      (s) =>
+        s.name?.toLowerCase().includes(q) ||
+        s.category?.toLowerCase().includes(q) ||
+        s.address?.toLowerCase().includes(q) ||
+        s.area?.toLowerCase().includes(q) ||
+        s.city?.toLowerCase().includes(q) ||
+        s.description?.toLowerCase().includes(q)
+    );
+  }
+
+  if (params.verifiedOnly) {
+    list = list.filter((s) => s.verified);
+  }
+
+  if (params.maxDistance && params.maxDistance !== 'all') {
+    list = list.filter((s) => {
+      const distNum = parseFloat(s.distance);
+      return isNaN(distNum) || distNum <= Number(params.maxDistance);
+    });
+  }
+
+  return list;
 }
 
 /**
@@ -70,13 +136,28 @@ export async function getNearbyShops({ latitude, longitude, radius = 10 }) {
     // Graceful fallback
   }
 
-  return mockShops;
+  return getAllMergedShops();
 }
 
 /**
  * Fetch single shop by ID
  */
 export async function getShopById(id) {
+  if (!id) return null;
+  const strId = String(id).toLowerCase().trim();
+
+  // Check custom shops in localStorage first for instant lookup
+  const customShops = getLocalCustomShops();
+  if (customShops[id]) return customShops[id];
+  const customMatch = Object.values(customShops).find(
+    (s) =>
+      s &&
+      (String(s.id).toLowerCase() === strId ||
+        String(s.numericId) === strId ||
+        `shop-${s.numericId}`.toLowerCase() === strId)
+  );
+  if (customMatch) return customMatch;
+
   try {
     const res = await fetchWithTimeout(`${API_BASE_URL}/shops/${id}`);
     if (res.ok) {
@@ -89,7 +170,17 @@ export async function getShopById(id) {
     // Graceful fallback
   }
 
-  return getMockShopById(id);
+  const merged = getAllMergedShops();
+  return (
+    merged.find(
+      (s) =>
+        s &&
+        (String(s.id).toLowerCase() === strId ||
+          String(s.numericId) === strId ||
+          `shop-${s.numericId}`.toLowerCase() === strId ||
+          (s.name && s.name.toLowerCase() === strId))
+    ) || null
+  );
 }
 
 /**
@@ -106,6 +197,46 @@ export async function getShopProducts(shopId) {
   }
 
   return [];
+}
+
+/**
+ * Update shop profile details (Owner action)
+ */
+export async function updateShopProfile(shopId, updateData, token) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/shops/${shopId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(updateData)
+    });
+
+    if (res.ok) {
+      const updated = await res.json();
+      return { success: true, shop: updated };
+    }
+  } catch {
+    // Fallback persistence
+  }
+
+  const custom = getLocalCustomShops();
+  custom[shopId] = {
+    ...(custom[shopId] || {}),
+    ...updateData,
+    id: shopId,
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    localStorage.setItem(LOCAL_SHOPS_KEY, JSON.stringify(custom));
+  } catch {
+    /* ignore */
+  }
+
+  const updatedShop = await getShopById(shopId);
+  return { success: true, shop: updatedShop, isLocal: true };
 }
 
 export { API_BASE_URL };

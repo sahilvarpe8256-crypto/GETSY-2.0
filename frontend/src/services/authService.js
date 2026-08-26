@@ -2,6 +2,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000
 
 const TOKEN_KEY = 'getsy_auth_token';
 const USER_KEY = 'getsy_auth_user';
+const LOCAL_SHOPS_KEY = 'getsy_custom_shops';
 
 export function getStoredToken() {
   try {
@@ -41,7 +42,7 @@ export function clearAuthSession() {
 /**
  * Login user
  */
-export async function loginUser({ email, password }) {
+export async function loginUser({ email, password, role = 'customer' }) {
   try {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
@@ -51,6 +52,10 @@ export async function loginUser({ email, password }) {
 
     const data = await res.json();
     if (res.ok && data.user) {
+      if (data.user.role === 'owner' && !data.user.shopId) {
+        data.user.shopId = 'shop-1';
+        data.user.shopName = 'Kothrud Shoes & Boots';
+      }
       saveAuthSession(data.user, data.token);
       return { success: true, user: data.user, token: data.token };
     }
@@ -58,14 +63,17 @@ export async function loginUser({ email, password }) {
       return { success: false, error: data.error };
     }
   } catch {
-    // If backend is offline, simulate authenticating the demo customer
+    // Graceful fallback simulation
+    const isOwner = role === 'owner' || email.toLowerCase().includes('owner');
     const mockUser = {
-      id: 'usr-demo-1',
-      name: email.split('@')[0] ? (email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1)) : 'Sahil',
+      id: isOwner ? 'usr-demo-owner' : 'usr-demo-customer',
+      name: isOwner ? 'GETSY Demo Owner' : (email.split('@')[0] ? (email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1)) : 'Sahil'),
       email: email,
-      role: 'customer'
+      role: isOwner ? 'owner' : 'customer',
+      shopId: isOwner ? 'shop-1' : null,
+      shopName: isOwner ? 'Kothrud Shoes & Boots' : null
     };
-    const mockToken = 'mock-jwt-token-getsy-demo';
+    const mockToken = isOwner ? 'mock-jwt-owner-token' : 'mock-jwt-customer-token';
     saveAuthSession(mockUser, mockToken);
     return { success: true, user: mockUser, token: mockToken, isMock: true };
   }
@@ -74,18 +82,29 @@ export async function loginUser({ email, password }) {
 }
 
 /**
- * Register user
+ * Register user (Customer or Shop Owner)
  */
-export async function registerUser({ name, email, password, role = 'customer', phone }) {
+export async function registerUser({
+  name,
+  email,
+  password,
+  role = 'customer',
+  phone,
+  shopData = null
+}) {
   try {
     const res = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password, role })
+      body: JSON.stringify({ name, email, password, role, shopData })
     });
 
     const data = await res.json();
     if (res.ok && data.user) {
+      if (data.user.role === 'owner' && !data.user.shopId) {
+        data.user.shopId = 'shop-1';
+        data.user.shopName = 'Kothrud Shoes & Boots';
+      }
       saveAuthSession(data.user, data.token);
       return { success: true, user: data.user, token: data.token };
     }
@@ -94,13 +113,50 @@ export async function registerUser({ name, email, password, role = 'customer', p
     }
   } catch {
     // Fallback simulation
+    const isOwner = role === 'owner';
+    const uniqueShopId = isOwner ? `shop-${Date.now().toString().slice(-6)}` : null;
+
+    if (isOwner && shopData) {
+      const newShop = {
+        id: uniqueShopId,
+        numericId: Date.now(),
+        name: shopData.shopName || `${name}'s Store`,
+        category: shopData.shopCategory || 'footwear',
+        imageType: shopData.shopCategory || 'footwear',
+        image: shopData.shopImage || null,
+        address: shopData.shopAddress || 'Local Market, Pune',
+        area: shopData.shopLandmark || shopData.locationName || 'Pune',
+        city: 'Pune',
+        landmark: shopData.shopLandmark || '',
+        gstNumber: shopData.shopGst || '',
+        coordinates: shopData.coordinates || { lat: 18.5196, lng: 73.8427 },
+        distance: '0.3 km',
+        rating: 5.0,
+        reviewsCount: 1,
+        verified: true,
+        openingHours: 'Open Today • 9:30 AM - 9:00 PM',
+        description: `Welcome to ${shopData.shopName || 'our shop'}! Browse verified local stock and reserve in-store.`
+      };
+
+      try {
+        const customShops = JSON.parse(localStorage.getItem(LOCAL_SHOPS_KEY) || '{}');
+        customShops[uniqueShopId] = newShop;
+        localStorage.setItem(LOCAL_SHOPS_KEY, JSON.stringify(customShops));
+      } catch {
+        /* storage error */
+      }
+    }
+
     const mockUser = {
       id: `usr-${Date.now()}`,
-      name: name || 'Sahil Varpe',
+      name: name || (isOwner ? 'Shop Owner' : 'Customer'),
       email,
       phone: phone || '',
-      role
+      role: isOwner ? 'owner' : 'customer',
+      shopId: isOwner ? (uniqueShopId || 'shop-1') : null,
+      shopName: isOwner ? (shopData?.shopName || 'My Store') : null
     };
+
     const mockToken = `mock-token-${Date.now()}`;
     saveAuthSession(mockUser, mockToken);
     return { success: true, user: mockUser, token: mockToken, isMock: true };
