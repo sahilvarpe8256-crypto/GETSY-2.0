@@ -60,12 +60,7 @@ export default function Home() {
 
   const handleShopClick = (shop) => {
     requireLocation(() => {
-      // Navigate to categories page filtered by shop category
-      if (shop.category) {
-        navigate(`/categories?cat=${shop.category.toLowerCase()}`);
-      } else {
-        navigate('/categories');
-      }
+      navigate(`/shops/${shop.id || shop._id}`);
     });
   };
 

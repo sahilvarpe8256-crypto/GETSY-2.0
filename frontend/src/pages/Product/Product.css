@@ -158,8 +158,18 @@
   font-size: 0.84rem;
   font-weight: 800;
   letter-spacing: 0.06em;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   margin-bottom: 4px;
+  text-decoration: none;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.product-shop-link:hover {
+  color: var(--primary-dark, #0a7269);
+  text-decoration: underline;
+  transform: translateX(2px);
 }
 
 .product-shop-distance {

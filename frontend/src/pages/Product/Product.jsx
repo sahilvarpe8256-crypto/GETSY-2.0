@@ -191,9 +191,16 @@ export default function Product() {
           <div className="product-info-column">
             {/* Shop Name in uppercase teal */}
             <div className="product-shop-header">
-              <span className="product-shop-tag">
-                {product.shopName ? product.shopName.toUpperCase() : 'GETSY VERIFIED STORE'}
-              </span>
+              {product.shopId ? (
+                <Link to={`/shops/${product.shopId}`} className="product-shop-tag product-shop-link">
+                  <Store size={13} />
+                  <span>{product.shopName ? product.shopName.toUpperCase() : 'GETSY VERIFIED STORE'}</span>
+                </Link>
+              ) : (
+                <span className="product-shop-tag">
+                  {product.shopName ? product.shopName.toUpperCase() : 'GETSY VERIFIED STORE'}
+                </span>
+              )}
               <div className="product-shop-distance">
                 <MapPin size={13} />
                 <span>{product.shopLocation || location || 'Sangamner'} ({product.distance || '1.2 km'})</span>
