@@ -1,28 +1,88 @@
-require('../backend/node_modules/dotenv').config({
- path: require('path').resolve(__dirname, '../backend/.env') 
-});
+// ============================================================================
+// GETSY 2.0 — Database Seed Script
+//
+// Populates the development database with demo data.
+//
+// SAFETY:
+//   This script removes ONLY its own previously seeded demo records
+//   identified by known demo email addresses. It NEVER uses
+//   deleteMany({}) or any equivalent that would wipe entire collections.
+//
+// Usage:
+//   node database/seed.js
+//
+// The script loads backend/.env when available. If MONGO_URI is not set,
+// it falls back to the local development default.
+// ============================================================================
+
+const path = require('path');
+const fs = require('fs');
+
+// ---------------------------------------------------------------------------
+// Environment setup
+// ---------------------------------------------------------------------------
+const envPath = path.resolve(__dirname, '../backend/.env');
+
+if (fs.existsSync(envPath)) {
+  require('../backend/node_modules/dotenv').config({ path: envPath });
+  console.log('Loaded environment from backend/.env');
+} else {
+  console.log('No backend/.env found — using defaults.');
+}
+
 const mongoose = require('../backend/node_modules/mongoose');
 const User = require('../backend/models/User');
 const Shop = require('../backend/models/Shop');
 const Product = require('../backend/models/Product');
 
-const MONGO_URI =
-  process.env.MONGO_URI || 'mongodb://localhost:27017/getsy';
+// ---------------------------------------------------------------------------
+// Resolve MongoDB URI
+// ---------------------------------------------------------------------------
+const LOCAL_FALLBACK = 'mongodb://localhost:27017/getsy';
+const MONGO_URI = process.env.MONGO_URI || LOCAL_FALLBACK;
 
+if (MONGO_URI === LOCAL_FALLBACK) {
+  console.log('MONGO_URI not set — using local fallback: localhost:27017/getsy');
+} else {
+  // Log connection mode without exposing credentials
+  console.log('Using MONGO_URI from environment.');
+}
+
+// Validate that the resolved URI looks like a MongoDB connection string
+if (!MONGO_URI.startsWith('mongodb://') && !MONGO_URI.startsWith('mongodb+srv://')) {
+  console.error('ERROR: Resolved MONGO_URI does not look like a valid MongoDB connection string.');
+  process.exit(1);
+}
+
+// ---------------------------------------------------------------------------
+// Known demo identifiers — used for selective cleanup and seeding
+// ---------------------------------------------------------------------------
+const DEMO_EMAILS = [
+  'demo.owner@getsy.com',
+  'demo.customer@getsy.com'
+];
+
+// ---------------------------------------------------------------------------
+// Seed
+// ---------------------------------------------------------------------------
 const seedDatabase = async () => {
   try {
     await mongoose.connect(MONGO_URI);
+    console.log('\nMongoDB connected for seeding.');
 
-    console.log('MongoDB connected for seeding.');
+    // -----------------------------------------------------------------------
+    // Phase 1 — Selective cleanup of previous demo data ONLY
+    //
+    // IMPORTANT: Never use User.deleteMany({}), Shop.deleteMany({}),
+    // or Product.deleteMany({}) without a filter. The seed script must
+    // only remove records it previously created.
+    // -----------------------------------------------------------------------
+    let removedUsers = 0;
+    let removedShops = 0;
+    let removedProducts = 0;
 
-    // Clear existing seed data
     const existingUsers = await User.find({
-      email: {
-        $in: [
-          'demo.owner@getsy.com',
-          'demo.customer@getsy.com'
-        ]
-      }
+      email: { $in: DEMO_EMAILS }
     }).select('_id');
 
     const existingUserIds = existingUsers.map(user => user._id);
@@ -35,23 +95,30 @@ const seedDatabase = async () => {
       const existingShopIds = existingShops.map(shop => shop._id);
 
       if (existingShopIds.length > 0) {
-        await Product.deleteMany({
+        const productResult = await Product.deleteMany({
           shopId: { $in: existingShopIds }
         });
+        removedProducts = productResult.deletedCount;
 
-        await Shop.deleteMany({
+        const shopResult = await Shop.deleteMany({
           _id: { $in: existingShopIds }
         });
+        removedShops = shopResult.deletedCount;
       }
 
-      await User.deleteMany({
+      const userResult = await User.deleteMany({
         _id: { $in: existingUserIds }
       });
+      removedUsers = userResult.deletedCount;
 
-      console.log('Previous demo data removed.');
+      console.log(`Removed previous demo data: ${removedUsers} users, ${removedShops} shops, ${removedProducts} products.`);
+    } else {
+      console.log('No previous demo data found to remove.');
     }
 
-    // Create demo users
+    // -----------------------------------------------------------------------
+    // Phase 2 — Create demo users
+    // -----------------------------------------------------------------------
     const owner = await User.create({
       name: 'GETSY Demo Owner',
       email: 'demo.owner@getsy.com',
@@ -66,7 +133,9 @@ const seedDatabase = async () => {
       role: 'customer'
     });
 
-    // Create demo shops
+    // -----------------------------------------------------------------------
+    // Phase 3 — Create demo shops
+    // -----------------------------------------------------------------------
     const fashionShop = await Shop.create({
       ownerId: owner._id,
       shopName: 'Urban Style Fashion',
@@ -99,7 +168,9 @@ const seedDatabase = async () => {
       verified: true
     });
 
-    // Create demo products
+    // -----------------------------------------------------------------------
+    // Phase 4 — Create demo products
+    // -----------------------------------------------------------------------
     await Product.insertMany([
       {
         shopId: fashionShop._id,
@@ -143,13 +214,16 @@ const seedDatabase = async () => {
       }
     ]);
 
-    console.log('Demo users created: 2');
-    console.log('Demo shops created: 2');
+    // -----------------------------------------------------------------------
+    // Summary
+    // -----------------------------------------------------------------------
+    console.log('\n--- Seed Summary ---');
+    console.log('Demo users created:    2');
+    console.log('Demo shops created:    2');
     console.log('Demo products created: 4');
-
     console.log('\nSeed completed successfully.');
   } catch (error) {
-    console.error('Seed failed:', error.message);
+    console.error('\nSeed failed:', error.message);
     process.exitCode = 1;
   } finally {
     await mongoose.connection.close();
