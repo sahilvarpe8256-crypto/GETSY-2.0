@@ -29,12 +29,13 @@ beforeEach(async () => {
   await Product.deleteMany({});
 });
 
-describe('Phase 5 AI Search Foundation', () => {
+describe('Backend AI Search Integration (POST /api/search/ai)', () => {
   let ownerToken;
-  let ownerShopId;
+  let sangamnerShopId;
+  let puneShopId;
 
   beforeEach(async () => {
-    // Create Owner & Shop
+    // 1. Create Owner User
     const ownerRes = await request(app)
       .post('/api/auth/register')
       .send({
@@ -45,37 +46,54 @@ describe('Phase 5 AI Search Foundation', () => {
       });
     ownerToken = ownerRes.body.token;
 
-    const shopRes = await request(app)
+    // 2. Create Sangamner Shop
+    const sangamnerShopRes = await request(app)
       .post('/api/shops')
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        shopName: 'AI Test Shop',
+        shopName: 'Sahil Footwear Sangamner',
         shopType: 'Footwear',
+        address: 'Main Road, Sangamner',
+        area: 'Sangamner',
         latitude: 19.57,
         longitude: 74.21
       });
-    ownerShopId = shopRes.body.id;
+    sangamnerShopId = sangamnerShopRes.body.id;
 
-    // Seed products for AI search testing
+    // 3. Create Pune Shop
+    const puneShopRes = await request(app)
+      .post('/api/shops')
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        shopName: 'Pune Active Tech',
+        shopType: 'Electronics',
+        address: 'FC Road, Pune',
+        area: 'Pune',
+        latitude: 18.52,
+        longitude: 73.86
+      });
+    puneShopId = puneShopRes.body.id;
+
+    // 4. Seed Products in MongoDB
     await request(app)
       .post('/api/products')
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        shopId: ownerShopId,
+        shopId: sangamnerShopId,
         name: 'Black Formal Shoes',
         category: 'Footwear',
-        description: 'Classic black leather formal shoes',
-        price: 1500
+        description: 'Classic black leather formal shoes for men',
+        price: 1800
       });
 
     await request(app)
       .post('/api/products')
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        shopId: ownerShopId,
+        shopId: sangamnerShopId,
         name: 'White Running Shoes',
         category: 'Footwear',
-        description: 'Lightweight white running shoes',
+        description: 'Lightweight white sports running sneakers',
         price: 2500
       });
 
@@ -83,31 +101,31 @@ describe('Phase 5 AI Search Foundation', () => {
       .post('/api/products')
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        shopId: ownerShopId,
+        shopId: sangamnerShopId,
         name: 'Brown Leather Belt',
         category: 'Accessories',
         description: 'Genuine brown leather belt',
-        price: 800
+        price: 650
       });
 
     await request(app)
       .post('/api/products')
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        shopId: ownerShopId,
-        name: 'Black Digital Watch',
-        category: 'Accessories',
-        description: 'Smart black digital watch',
-        price: 3000
+        shopId: puneShopId,
+        name: 'Wireless Earbuds',
+        category: 'Electronics',
+        description: 'Bluetooth noise cancelling earbuds',
+        price: 1500
       });
   });
 
-  describe('POST /api/search/ai (Intelligent Search)', () => {
-    it('should return 200 with structuredQuery and products for a valid query', async () => {
+  describe('A. Exact Target Query Verification', () => {
+    it('should parse and match products for: "I need black formal shoes under 2000 near Sangamner"', async () => {
       const res = await request(app)
         .post('/api/search/ai')
         .send({
-          query: 'I need black formal shoes under 2000 near me',
+          query: 'I need black formal shoes under 2000 near Sangamner',
           latitude: 19.57,
           longitude: 74.21
         });
@@ -115,10 +133,108 @@ describe('Phase 5 AI Search Foundation', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty('structuredQuery');
       expect(res.body).toHaveProperty('products');
-      expect(Array.isArray(res.body.products)).toBe(true);
+
+      // Verify structured query properties
+      const sq = res.body.structuredQuery;
+      expect(sq.intent).toBe('product_search');
+      expect(sq.category).toBe('footwear');
+      expect(sq.attributes.color).toBe('black');
+      expect(sq.attributes.style).toBe('formal');
+      expect(sq.price.max).toBe(2000);
+      expect(sq.maxPrice).toBe(2000);
+      expect(sq.location.name).toBe('sangamner');
+      expect(sq.location.latitude).toBe(19.57);
+      expect(sq.location.longitude).toBe(74.21);
+
+      // Verify real MongoDB matched product
+      expect(res.body.products.length).toBeGreaterThan(0);
+      const topMatch = res.body.products[0];
+      expect(topMatch.name).toBe('Black Formal Shoes');
+      expect(topMatch.price).toBe(1800);
+      expect(topMatch.price).toBeLessThanOrEqual(2000);
+    });
+  });
+
+  describe('B. Price Constraints (under / above)', () => {
+    it('should filter products under maxPrice: "shoes under 2000"', async () => {
+      const res = await request(app)
+        .post('/api/search/ai')
+        .send({
+          query: 'shoes under 2000'
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.products.length).toBe(1);
+      expect(res.body.products[0].name).toBe('Black Formal Shoes');
+      expect(res.body.products[0].price).toBe(1800);
     });
 
-    it('should return 400 when query is missing', async () => {
+    it('should filter products above minPrice: "shoes above 2000"', async () => {
+      const res = await request(app)
+        .post('/api/search/ai')
+        .send({
+          query: 'shoes above 2000'
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.products.length).toBe(1);
+      expect(res.body.products[0].name).toBe('White Running Shoes');
+      expect(res.body.products[0].price).toBe(2500);
+    });
+  });
+
+  describe('C. Price Range Constraints', () => {
+    it('should filter products within a range: "shoes between 1000 and 3000"', async () => {
+      const res = await request(app)
+        .post('/api/search/ai')
+        .send({
+          query: 'shoes between 1000 and 3000'
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.products.length).toBe(2);
+      for (const prod of res.body.products) {
+        expect(prod.price).toBeGreaterThanOrEqual(1000);
+        expect(prod.price).toBeLessThanOrEqual(3000);
+      }
+    });
+  });
+
+  describe('D. Category Extraction & Browse Intent', () => {
+    it('should extract category and return all footwear products for: "show me footwear"', async () => {
+      const res = await request(app)
+        .post('/api/search/ai')
+        .send({
+          query: 'show me footwear'
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.structuredQuery.category).toBe('footwear');
+      expect(res.body.products.length).toBe(2);
+      expect(res.body.products.every((p) => p.category.toLowerCase() === 'footwear')).toBe(true);
+    });
+  });
+
+  describe('E. Location & Shop Search Intent', () => {
+    it('should identify shop search intent and return matching shops for: "shops near Pune"', async () => {
+      const res = await request(app)
+        .post('/api/search/ai')
+        .send({
+          query: 'shops near Pune',
+          latitude: 18.52,
+          longitude: 73.86
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.structuredQuery.intent).toBe('shop_search');
+      expect(res.body.structuredQuery.location.name).toBe('pune');
+      expect(res.body.shops).toBeDefined();
+      expect(Array.isArray(res.body.shops)).toBe(true);
+    });
+  });
+
+  describe('F. Validation & Error Handling', () => {
+    it('should return 400 when query parameter is missing', async () => {
       const res = await request(app)
         .post('/api/search/ai')
         .send({
@@ -130,7 +246,7 @@ describe('Phase 5 AI Search Foundation', () => {
       expect(res.body).toHaveProperty('error');
     });
 
-    it('should return 400 when query is empty string', async () => {
+    it('should return 400 when query is an empty string', async () => {
       const res = await request(app)
         .post('/api/search/ai')
         .send({
@@ -141,165 +257,46 @@ describe('Phase 5 AI Search Foundation', () => {
       expect(res.body).toHaveProperty('error');
     });
 
-    it('should extract category from natural language query', async () => {
-      const res = await request(app)
-        .post('/api/search/ai')
-        .send({
-          query: 'shoes'
-        });
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.structuredQuery).toHaveProperty('category', 'footwear');
-    });
-
-    it('should extract keywords from natural language query', async () => {
-      const res = await request(app)
-        .post('/api/search/ai')
-        .send({
-          query: 'black formal shoes'
-        });
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.structuredQuery).toHaveProperty('keywords');
-      expect(res.body.structuredQuery.keywords).toContain('black');
-      expect(res.body.structuredQuery.keywords).toContain('formal');
-    });
-
-    it('should extract maxPrice from price patterns in query', async () => {
-      const res = await request(app)
-        .post('/api/search/ai')
-        .send({
-          query: 'shoes under 2000'
-        });
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.structuredQuery).toHaveProperty('maxPrice', 2000);
-    });
-
-    it('should pass through latitude and longitude to structuredQuery', async () => {
+    it('should return 400 for out-of-bounds coordinates', async () => {
       const res = await request(app)
         .post('/api/search/ai')
         .send({
           query: 'shoes',
-          latitude: 19.57,
-          longitude: 74.21
+          latitude: 95
         });
 
-      expect(res.statusCode).toBe(200);
-      expect(res.body.structuredQuery).toHaveProperty('latitude', 19.57);
-      expect(res.body.structuredQuery).toHaveProperty('longitude', 74.21);
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toHaveProperty('error');
     });
+  });
 
-    it('should work without latitude and longitude (coordinates are optional)', async () => {
+  describe('G. Empty Search Results', () => {
+    it('should return 200 with empty products array when no products match in MongoDB', async () => {
       const res = await request(app)
         .post('/api/search/ai')
         .send({
-          query: 'black shoes'
+          query: 'swimming costume under 500'
         });
 
       expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty('structuredQuery');
-      expect(res.body).toHaveProperty('products');
-      expect(res.body.structuredQuery).not.toHaveProperty('latitude');
-      expect(res.body.structuredQuery).not.toHaveProperty('longitude');
-    });
-
-    it('should return 400 for invalid latitude (out of range)', async () => {
-      const res = await request(app)
-        .post('/api/search/ai')
-        .send({
-          query: 'shoes',
-          latitude: 100,
-          longitude: 74.21
-        });
-
-      expect(res.statusCode).toBe(400);
-      expect(res.body).toHaveProperty('error');
-    });
-
-    it('should return 400 for invalid longitude (out of range)', async () => {
-      const res = await request(app)
-        .post('/api/search/ai')
-        .send({
-          query: 'shoes',
-          latitude: 19.57,
-          longitude: 200
-        });
-
-      expect(res.statusCode).toBe(400);
-      expect(res.body).toHaveProperty('error');
-    });
-
-    it('should return 200 with empty products array when no products match', async () => {
-      const res = await request(app)
-        .post('/api/search/ai')
-        .send({
-          query: 'gaming keyboard'
-        });
-
-      expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty('products');
       expect(Array.isArray(res.body.products)).toBe(true);
       expect(res.body.products.length).toBe(0);
     });
+  });
 
-    it('should exclude products above maxPrice from results', async () => {
+  describe('H. Public Endpoint Access', () => {
+    it('should not require auth token to execute AI search', async () => {
       const res = await request(app)
         .post('/api/search/ai')
         .send({
-          query: 'shoes under 2000'
+          query: 'leather belt'
         });
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.products.length).toBeGreaterThan(0);
-
-      // All returned products should have price <= 2000
-      for (const product of res.body.products) {
-        expect(product.price).toBeLessThanOrEqual(2000);
-      }
-
-      // Black Formal Shoes (1500) should be included, White Running Shoes (2500) excluded
-      const names = res.body.products.map((p) => p.name);
-      expect(names).toContain('Black Formal Shoes');
-      expect(names).not.toContain('White Running Shoes');
-    });
-
-    it('should handle full natural language query with category, keywords, price and location', async () => {
-      const res = await request(app)
-        .post('/api/search/ai')
-        .send({
-          query: 'I need black formal shoes under 2000 near me',
-          latitude: 19.57,
-          longitude: 74.21
-        });
-
-      expect(res.statusCode).toBe(200);
-      expect(res.body.structuredQuery).toHaveProperty('category', 'footwear');
-      expect(res.body.structuredQuery).toHaveProperty('keywords');
-      expect(res.body.structuredQuery.keywords).toContain('black');
-      expect(res.body.structuredQuery.keywords).toContain('formal');
-      expect(res.body.structuredQuery).toHaveProperty('maxPrice', 2000);
-      expect(res.body.structuredQuery).toHaveProperty('latitude', 19.57);
-      expect(res.body.structuredQuery).toHaveProperty('longitude', 74.21);
-
-      // Should return matching products under the price limit
-      expect(res.body.products.length).toBeGreaterThan(0);
-      for (const product of res.body.products) {
-        expect(product.price).toBeLessThanOrEqual(2000);
-      }
-    });
-
-    it('should not require authentication (public endpoint)', async () => {
-      const res = await request(app)
-        .post('/api/search/ai')
-        .send({
-          query: 'shoes'
-        });
-
-      // No Authorization header provided — should still work
-      expect(res.statusCode).toBe(200);
-      expect(res.body).toHaveProperty('structuredQuery');
-      expect(res.body).toHaveProperty('products');
+      expect(res.body.products.length).toBe(1);
+      expect(res.body.products[0].name).toBe('Brown Leather Belt');
     });
   });
 });

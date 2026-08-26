@@ -119,15 +119,29 @@ export default function Search() {
   const handleRemoveFilter = ({ type, value }) => {
     if (!structuredQuery) return;
 
-    const updated = { ...structuredQuery };
+    const updated = {
+      ...structuredQuery,
+      attributes: { ...(structuredQuery.attributes || {}) },
+      price: { ...(structuredQuery.price || {}) }
+    };
 
     if (type === 'category') {
       delete updated.category;
       if (activeCategory !== 'all') {
         setActiveCategory('all');
       }
-    } else if (type === 'maxPrice') {
+    } else if (type === 'price' || type === 'maxPrice' || type === 'minPrice') {
       delete updated.maxPrice;
+      delete updated.minPrice;
+      updated.price = { min: null, max: null };
+    } else if (type === 'color') {
+      updated.attributes.color = null;
+    } else if (type === 'style') {
+      updated.attributes.style = null;
+    } else if (type === 'material') {
+      updated.attributes.material = null;
+    } else if (type === 'size') {
+      updated.attributes.size = null;
     } else if (type === 'keyword' && value) {
       if (Array.isArray(updated.keywords)) {
         updated.keywords = updated.keywords.filter(
@@ -137,6 +151,7 @@ export default function Search() {
     } else if (type === 'location') {
       delete updated.latitude;
       delete updated.longitude;
+      updated.location = null;
     }
 
     setStructuredQuery(updated);
@@ -168,7 +183,15 @@ export default function Search() {
     if (structuredQuery && Object.keys(structuredQuery).length > 0) {
       const parts = [];
       if (structuredQuery.category) parts.push(structuredQuery.category);
-      if (structuredQuery.maxPrice) parts.push(`under ₹${structuredQuery.maxPrice.toLocaleString('en-IN')}`);
+      if (structuredQuery.price?.min && structuredQuery.price?.max) {
+        parts.push(`between ₹${structuredQuery.price.min.toLocaleString('en-IN')} and ₹${structuredQuery.price.max.toLocaleString('en-IN')}`);
+      } else if (structuredQuery.price?.max || structuredQuery.maxPrice) {
+        const max = structuredQuery.price?.max || structuredQuery.maxPrice;
+        parts.push(`under ₹${max.toLocaleString('en-IN')}`);
+      } else if (structuredQuery.price?.min || structuredQuery.minPrice) {
+        const min = structuredQuery.price?.min || structuredQuery.minPrice;
+        parts.push(`above ₹${min.toLocaleString('en-IN')}`);
+      }
       if (structuredQuery.keywords?.length) parts.push(`matching "${structuredQuery.keywords.join(', ')}"`);
       if (parts.length > 0) {
         return `No products found ${parts.join(' ')}. Try resetting some filters or adjusting your search.`;

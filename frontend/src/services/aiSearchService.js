@@ -6,6 +6,33 @@ const LOCAL_PRODUCTS_KEY = 'getsy_custom_products';
 const DELETED_PRODUCTS_KEY = 'getsy_deleted_product_ids';
 
 /**
+ * Known Maharashtra locations with coordinates for offline client-side fallback.
+ */
+const KNOWN_LOCATIONS = {
+  sangamner: { latitude: 19.57, longitude: 74.21 },
+  pune: { latitude: 18.52, longitude: 73.86 },
+  mumbai: { latitude: 19.08, longitude: 72.88 },
+  nashik: { latitude: 20.00, longitude: 73.78 },
+  nagpur: { latitude: 21.15, longitude: 79.09 },
+  aurangabad: { latitude: 19.88, longitude: 75.34 },
+  thane: { latitude: 19.22, longitude: 72.98 },
+  solapur: { latitude: 17.68, longitude: 75.91 },
+  kolhapur: { latitude: 16.70, longitude: 74.24 },
+  ahmednagar: { latitude: 19.09, longitude: 74.74 },
+  shirdi: { latitude: 19.77, longitude: 74.48 },
+  akola: { latitude: 20.71, longitude: 77.00 },
+  latur: { latitude: 18.40, longitude: 76.57 },
+  navi_mumbai: { latitude: 19.03, longitude: 73.03 },
+  satara: { latitude: 17.68, longitude: 73.99 },
+  sangli: { latitude: 16.85, longitude: 74.56 },
+  jalgaon: { latitude: 21.01, longitude: 75.57 },
+  ratnagiri: { latitude: 16.99, longitude: 73.30 },
+  amravati: { latitude: 20.93, longitude: 77.75 },
+  nanded: { latitude: 19.16, longitude: 77.30 },
+  kopargaon: { latitude: 19.88, longitude: 74.48 }
+};
+
+/**
  * Category synonym mapping for client-side rule-based fallback parser.
  * Maps common natural-language terms to normalized category IDs.
  */
@@ -17,26 +44,60 @@ export const CATEGORY_SYNONYMS = {
   sneakers: 'footwear',
   sandal: 'footwear',
   sandals: 'footwear',
-  boot: 'footwear',
-  boots: 'footwear',
   slipper: 'footwear',
   slippers: 'footwear',
+  boot: 'footwear',
+  boots: 'footwear',
+  heel: 'footwear',
+  heels: 'footwear',
+  loafer: 'footwear',
+  loafers: 'footwear',
+  chappal: 'footwear',
+  chappals: 'footwear',
   footwear: 'footwear',
+  jogger: 'footwear',
+  joggers: 'footwear',
+  floater: 'footwear',
+  floaters: 'footwear',
 
   // Clothing
   shirt: 'clothing',
   shirts: 'clothing',
   tshirt: 'clothing',
   tshirts: 'clothing',
+  't-shirt': 'clothing',
+  't-shirts': 'clothing',
   pant: 'clothing',
   pants: 'clothing',
+  trouser: 'clothing',
+  trousers: 'clothing',
   jeans: 'clothing',
-  jacket: 'clothing',
-  jackets: 'clothing',
+  jean: 'clothing',
   dress: 'clothing',
   dresses: 'clothing',
+  kurta: 'clothing',
+  kurtas: 'clothing',
+  saree: 'clothing',
+  sarees: 'clothing',
+  sari: 'clothing',
+  saris: 'clothing',
+  jacket: 'clothing',
+  jackets: 'clothing',
+  hoodie: 'clothing',
+  hoodies: 'clothing',
+  sweater: 'clothing',
+  sweaters: 'clothing',
+  top: 'clothing',
+  tops: 'clothing',
+  skirt: 'clothing',
+  skirts: 'clothing',
+  shorts: 'clothing',
+  blazer: 'clothing',
+  blazers: 'clothing',
   clothing: 'clothing',
   clothes: 'clothing',
+  garment: 'clothing',
+  garments: 'clothing',
   apparel: 'clothing',
 
   // Accessories
@@ -46,9 +107,25 @@ export const CATEGORY_SYNONYMS = {
   wallets: 'accessories',
   watch: 'accessories',
   watches: 'accessories',
+  sunglasses: 'accessories',
+  sunglass: 'accessories',
   bag: 'accessories',
   bags: 'accessories',
-  sunglasses: 'accessories',
+  purse: 'accessories',
+  purses: 'accessories',
+  backpack: 'accessories',
+  backpacks: 'accessories',
+  handbag: 'accessories',
+  handbags: 'accessories',
+  cap: 'accessories',
+  caps: 'accessories',
+  hat: 'accessories',
+  hats: 'accessories',
+  scarf: 'accessories',
+  scarves: 'accessories',
+  tie: 'accessories',
+  ties: 'accessories',
+  accessory: 'accessories',
   accessories: 'accessories',
 
   // Ornaments / Jewellery
@@ -64,6 +141,8 @@ export const CATEGORY_SYNONYMS = {
   bangles: 'ornaments',
   earring: 'ornaments',
   earrings: 'ornaments',
+  bracelet: 'ornaments',
+  bracelets: 'ornaments',
 
   // Hardware
   hardware: 'hardware',
@@ -77,24 +156,50 @@ export const CATEGORY_SYNONYMS = {
   // Electronics
   phone: 'electronics',
   phones: 'electronics',
+  mobile: 'electronics',
+  mobiles: 'electronics',
+  smartphone: 'electronics',
+  smartphones: 'electronics',
   laptop: 'electronics',
   laptops: 'electronics',
-  earbuds: 'electronics',
-  headphones: 'electronics',
-  charger: 'electronics',
   tablet: 'electronics',
-  electronics: 'electronics'
+  tablets: 'electronics',
+  headphone: 'electronics',
+  headphones: 'electronics',
+  earphone: 'electronics',
+  earphones: 'electronics',
+  earbuds: 'electronics',
+  earbud: 'electronics',
+  charger: 'electronics',
+  chargers: 'electronics',
+  camera: 'electronics',
+  cameras: 'electronics',
+  speaker: 'electronics',
+  speakers: 'electronics',
+  television: 'electronics',
+  tv: 'electronics',
+  electronics: 'electronics',
+  electronic: 'electronics',
+  gadget: 'electronics',
+  gadgets: 'electronics'
 };
 
-/**
- * Common conversational filler phrases to strip from natural-language queries.
- */
-const FILLER_PATTERN = /\b(i need|i want|looking for|search for|find me|show me|get me|please find|near me|nearby)\b/gi;
+const ATTRIBUTE_VALUES = {
+  colors: ['black', 'white', 'red', 'blue', 'brown', 'green', 'yellow', 'grey', 'gray', 'pink', 'orange', 'purple', 'beige', 'maroon', 'navy'],
+  styles: ['formal', 'casual', 'sports', 'party', 'ethnic', 'traditional', 'vintage', 'modern', 'classic', 'designer'],
+  materials: ['leather', 'cotton', 'denim', 'silk', 'gold', 'silver', 'wool', 'woolen', 'linen', 'polyester', 'nylon', 'velvet'],
+  sizes: ['xxxl', 'xxl', 'xl', 'xs', 's', 'm', 'l']
+};
 
-/**
- * Price matching regex patterns (e.g. "under 2000", "below 500", "less than 1000", "within 2000", "upto 2000", "up to 2000")
- */
-const PRICE_PATTERN = /(?:under|below|less than|within|upto|up to)\s+(\d+(?:\.\d+)?)/i;
+const STOP_WORDS = new Set([
+  'a', 'an', 'the', 'and', 'or', 'of', 'for', 'with', 'in', 'on', 'at', 'to',
+  'from', 'by', 'near', 'around', 'about', 'me', 'my', 'i', 'we', 'you', 'it',
+  'this', 'that', 'these', 'those', 'is', 'are', 'was', 'were', 'be', 'been',
+  'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'can', 'could',
+  'should', 'want', 'need', 'please', 'some', 'any', 'all', 'item', 'items',
+  'product', 'products', 'good', 'best', 'cheap', 'affordable', 'top', 'buy',
+  'purchase', 'shop', 'shops', 'store', 'stores'
+]);
 
 /**
  * Retrieve local customized products from localStorage safely
@@ -140,75 +245,229 @@ export function getAllMergedProducts() {
 }
 
 /**
- * Parse natural-language search query into structured parameters.
- * Mirrors the backend aiService.js rule-based parser.
+ * Parse natural-language search query into structured parameters for client-side fallback.
+ * Aligns 100% with the standalone /ai query parser contract.
  *
  * @param {string} query - Natural language search query
  * @param {number|undefined} latitude - Optional latitude
  * @param {number|undefined} longitude - Optional longitude
- * @returns {object} structuredQuery with extracted category, keywords, maxPrice, coordinates
+ * @returns {object} Normalized structuredQuery
  */
 export function parseQuery(query = '', latitude, longitude) {
-  const structuredQuery = {};
-  if (!query || typeof query !== 'string') {
+  const originalQuery = typeof query === 'string' ? query : (query ? String(query) : '');
+
+  const structuredQuery = {
+    intent: 'product_search',
+    category: null,
+    keywords: [],
+    attributes: {
+      color: null,
+      style: null,
+      material: null,
+      size: null
+    },
+    price: {
+      min: null,
+      max: null
+    },
+    location: null,
+    confidence: 0,
+    originalQuery
+  };
+
+  if (!query || typeof query !== 'string' || !query.trim()) {
     if (latitude !== undefined && latitude !== null && !isNaN(Number(latitude))) {
+      structuredQuery.location = {
+        name: null,
+        latitude: Number(latitude),
+        longitude: longitude !== undefined && longitude !== null && !isNaN(Number(longitude)) ? Number(longitude) : null
+      };
       structuredQuery.latitude = Number(latitude);
+      if (structuredQuery.location.longitude !== null) structuredQuery.longitude = structuredQuery.location.longitude;
     }
-    if (longitude !== undefined && longitude !== null && !isNaN(Number(longitude))) {
-      structuredQuery.longitude = Number(longitude);
-    }
+    structuredQuery.intent = 'browse';
     return structuredQuery;
   }
 
-  let remainingQuery = query.toLowerCase().trim();
+  let text = ' ' + originalQuery.toLowerCase().trim() + ' ';
 
-  // 1. Extract maxPrice pattern (e.g. "under 2000")
-  const priceMatch = remainingQuery.match(PRICE_PATTERN);
-  if (priceMatch) {
-    structuredQuery.maxPrice = parseFloat(priceMatch[1]);
-    remainingQuery = remainingQuery.replace(priceMatch[0], '').trim();
-  }
+  // 1. Intent
+  const isShopSearch = /\b(shops|shop|stores|store|outlets|outlet|dealers|dealer|showrooms|showroom|market|markets|boutique|boutiques)\b/i.test(text);
+  const isBrowse = /^\s*(browse|explore|show all|view all|list all)\b/i.test(originalQuery.trim()) ||
+    /^\s*(show me|view|browse|explore)\s+(all\s+)?(footwear|clothing|electronics|accessories|ornaments|hardware|groceries|products|items)\s*$/i.test(originalQuery.trim());
 
-  // 2. Remove conversational filler phrases
-  remainingQuery = remainingQuery
-    .replace(FILLER_PATTERN, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  if (isShopSearch) structuredQuery.intent = 'shop_search';
+  else if (isBrowse) structuredQuery.intent = 'browse';
+  else structuredQuery.intent = 'product_search';
 
-  // 3. Extract category from remaining tokens and collect descriptive keywords
-  const words = remainingQuery.split(/\s+/).filter((w) => w.length > 0);
-  let category = null;
-  const keywordWords = [];
-
-  for (const word of words) {
-    const cleanWord = word.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    if (!cleanWord) continue;
-
-    // Check if the word is a known category synonym (only first matched category is selected)
-    if (!category && CATEGORY_SYNONYMS[cleanWord]) {
-      category = CATEGORY_SYNONYMS[cleanWord];
-    } else if (cleanWord.length > 1) {
-      // Exclude single characters unless meaningful
-      keywordWords.push(cleanWord);
+  // 2. Location
+  let extractedLocName = null;
+  const locPrepMatch = text.match(/\b(?:near|in|around|at|from|to)\s+([a-z]+(?:\s+[a-z]+)?)\b/i);
+  if (locPrepMatch) {
+    const candidate = locPrepMatch[1].trim();
+    const candidateKey = candidate.replace(/\s+/g, '_');
+    if (KNOWN_LOCATIONS[candidateKey] || KNOWN_LOCATIONS[candidate]) {
+      extractedLocName = candidate;
+      text = text.replace(locPrepMatch[0], ' ');
+    } else {
+      const firstWord = candidate.split(/\s+/)[0];
+      if (!CATEGORY_SYNONYMS[firstWord] && !STOP_WORDS.has(firstWord)) {
+        extractedLocName = candidate;
+        text = text.replace(locPrepMatch[0], ' ');
+      }
     }
   }
 
-  if (category) {
-    structuredQuery.category = category;
+  if (!extractedLocName) {
+    for (const locKey of Object.keys(KNOWN_LOCATIONS)) {
+      const locDisplay = locKey.replace(/_/g, ' ');
+      const locRegex = new RegExp(`\\b${locDisplay}\\b`, 'i');
+      if (locRegex.test(text)) {
+        extractedLocName = locDisplay;
+        text = text.replace(locRegex, ' ');
+        break;
+      }
+    }
   }
 
-  if (keywordWords.length > 0) {
-    structuredQuery.keywords = keywordWords;
-  }
-
-  // 4. Pass-through coordinates if provided
-  if (latitude !== undefined && latitude !== null && !isNaN(Number(latitude))) {
+  if (extractedLocName) {
+    const locKey = extractedLocName.toLowerCase().replace(/\s+/g, '_');
+    if (KNOWN_LOCATIONS[locKey]) {
+      structuredQuery.location = {
+        name: extractedLocName.toLowerCase(),
+        latitude: KNOWN_LOCATIONS[locKey].latitude,
+        longitude: KNOWN_LOCATIONS[locKey].longitude
+      };
+      structuredQuery.latitude = KNOWN_LOCATIONS[locKey].latitude;
+      structuredQuery.longitude = KNOWN_LOCATIONS[locKey].longitude;
+    } else {
+      structuredQuery.location = {
+        name: extractedLocName.toLowerCase(),
+        latitude: null,
+        longitude: null
+      };
+    }
+  } else if (latitude !== undefined && latitude !== null && !isNaN(Number(latitude))) {
+    structuredQuery.location = {
+      name: null,
+      latitude: Number(latitude),
+      longitude: longitude !== undefined && longitude !== null && !isNaN(Number(longitude)) ? Number(longitude) : null
+    };
     structuredQuery.latitude = Number(latitude);
+    if (structuredQuery.location.longitude !== null) structuredQuery.longitude = structuredQuery.location.longitude;
   }
 
-  if (longitude !== undefined && longitude !== null && !isNaN(Number(longitude))) {
-    structuredQuery.longitude = Number(longitude);
+  // 3. Price (Range, Max, Min)
+  const rangePattern = /\b(?:between|from)\s+(?:rs\.?|inr|₹)?\s*(\d+(?:\.\d+)?)\s*(?:and|to|-)\s*(?:rs\.?|inr|₹)?\s*(\d+(?:\.\d+)?)\b/i;
+  const rangeMatch = text.match(rangePattern);
+  if (rangeMatch) {
+    structuredQuery.price.min = parseFloat(rangeMatch[1]);
+    structuredQuery.price.max = parseFloat(rangeMatch[2]);
+    structuredQuery.minPrice = structuredQuery.price.min;
+    structuredQuery.maxPrice = structuredQuery.price.max;
+    text = text.replace(rangeMatch[0], ' ');
+  } else {
+    const maxPattern = /\b(?:under|below|less than|upto|up to|within|max|maximum of)\s+(?:rs\.?|inr|₹)?\s*(\d+(?:\.\d+)?)\b/i;
+    const maxMatch = text.match(maxPattern);
+    if (maxMatch) {
+      structuredQuery.price.max = parseFloat(maxMatch[1]);
+      structuredQuery.maxPrice = structuredQuery.price.max;
+      text = text.replace(maxMatch[0], ' ');
+    }
+
+    const minPattern = /\b(?:above|over|more than|exceeding|min|minimum of|starting from|greater than)\s+(?:rs\.?|inr|₹)?\s*(\d+(?:\.\d+)?)\b/i;
+    const minMatch = text.match(minPattern);
+    if (minMatch) {
+      structuredQuery.price.min = parseFloat(minMatch[1]);
+      structuredQuery.minPrice = structuredQuery.price.min;
+      text = text.replace(minMatch[0], ' ');
+    }
   }
+
+  // 4. Attributes
+  for (const color of ATTRIBUTE_VALUES.colors) {
+    const colorRegex = new RegExp(`\\b${color}\\b`, 'i');
+    if (colorRegex.test(text)) {
+      structuredQuery.attributes.color = color;
+      text = text.replace(colorRegex, ' ');
+      break;
+    }
+  }
+
+  for (const style of ATTRIBUTE_VALUES.styles) {
+    const styleRegex = new RegExp(`\\b${style}\\b`, 'i');
+    if (styleRegex.test(text)) {
+      structuredQuery.attributes.style = style;
+      text = text.replace(styleRegex, ' ');
+      break;
+    }
+  }
+
+  for (const mat of ATTRIBUTE_VALUES.materials) {
+    const matRegex = new RegExp(`\\b${mat}\\b`, 'i');
+    if (matRegex.test(text)) {
+      structuredQuery.attributes.material = mat;
+      text = text.replace(matRegex, ' ');
+      break;
+    }
+  }
+
+  const sizeExplicitMatch = text.match(/\bsize\s*[:\s]\s*([a-z0-9]+)\b/i);
+  if (sizeExplicitMatch) {
+    structuredQuery.attributes.size = sizeExplicitMatch[1].toUpperCase();
+    text = text.replace(sizeExplicitMatch[0], ' ');
+  } else {
+    const sizeStandaloneMatch = text.match(/\b(xxxl|xxl|xl|xs)\b/i);
+    if (sizeStandaloneMatch) {
+      structuredQuery.attributes.size = sizeStandaloneMatch[1].toUpperCase();
+      text = text.replace(sizeStandaloneMatch[0], ' ');
+    }
+  }
+
+  // 5. Category
+  const sortedSynonyms = Object.keys(CATEGORY_SYNONYMS).sort((a, b) => b.length - a.length);
+  for (const syn of sortedSynonyms) {
+    const synRegex = new RegExp(`\\b${syn}\\b`, 'i');
+    if (synRegex.test(text)) {
+      structuredQuery.category = CATEGORY_SYNONYMS[syn];
+      text = text.replace(synRegex, ' ');
+      break;
+    }
+  }
+
+  // 6. Filler Phrases Removal
+  const fillerPattern = /\b(i need|i want|looking for|search for|find me|show me|get me|please find|tell me|bring me|give me|can you find|can you show|near me|nearby|search|find)\b/gi;
+  text = text.replace(fillerPattern, ' ');
+
+  // 7. Keywords
+  const extractedKeywords = [];
+  if (structuredQuery.attributes.color) extractedKeywords.push(structuredQuery.attributes.color);
+  if (structuredQuery.attributes.style) extractedKeywords.push(structuredQuery.attributes.style);
+  if (structuredQuery.attributes.material && !extractedKeywords.includes(structuredQuery.attributes.material)) {
+    extractedKeywords.push(structuredQuery.attributes.material);
+  }
+
+  const residualWords = text
+    .replace(/[^a-z0-9\s]/gi, ' ')
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !STOP_WORDS.has(w) && isNaN(Number(w)));
+
+  for (const w of residualWords) {
+    if (!extractedKeywords.includes(w)) {
+      extractedKeywords.push(w);
+    }
+  }
+
+  structuredQuery.keywords = extractedKeywords;
+
+  // 8. Confidence Score
+  let score = 0.30;
+  if (structuredQuery.category) score += 0.25;
+  if (structuredQuery.price.min !== null || structuredQuery.price.max !== null) score += 0.15;
+  if (structuredQuery.location) score += 0.15;
+  if (structuredQuery.attributes.color || structuredQuery.attributes.style || structuredQuery.attributes.material || structuredQuery.attributes.size) score += 0.15;
+  if (structuredQuery.keywords.length > 0) score += 0.05;
+  structuredQuery.confidence = Math.min(0.98, Math.round(score * 100) / 100);
 
   return structuredQuery;
 }
@@ -236,14 +495,71 @@ export function filterProductsByStructuredQuery(structuredQuery = {}) {
     }
 
     // 2. Max price filter
-    if (structuredQuery.maxPrice !== undefined && structuredQuery.maxPrice !== null) {
+    const maxPrice = structuredQuery.price?.max !== undefined && structuredQuery.price?.max !== null
+      ? structuredQuery.price.max
+      : structuredQuery.maxPrice;
+    if (maxPrice !== undefined && maxPrice !== null) {
       const price = Number(product.price);
-      if (isNaN(price) || price > structuredQuery.maxPrice) {
+      if (isNaN(price) || price > maxPrice) {
         return false;
       }
     }
 
-    // 3. Keywords filter (matches name, description, category, or shopName)
+    // 3. Min price filter
+    const minPrice = structuredQuery.price?.min !== undefined && structuredQuery.price?.min !== null
+      ? structuredQuery.price.min
+      : structuredQuery.minPrice;
+    if (minPrice !== undefined && minPrice !== null) {
+      const price = Number(product.price);
+      if (isNaN(price) || price < minPrice) {
+        return false;
+      }
+    }
+
+    // 4. Color Attribute Filter
+    if (structuredQuery.attributes?.color) {
+      const targetColor = structuredQuery.attributes.color.toLowerCase();
+      const prodColor = product.attributes?.color?.toLowerCase();
+      const inNameOrDesc = (product.name || '').toLowerCase().includes(targetColor) ||
+        (product.description || '').toLowerCase().includes(targetColor);
+      if (prodColor !== targetColor && !inNameOrDesc) {
+        return false;
+      }
+    }
+
+    // 5. Style Attribute Filter
+    if (structuredQuery.attributes?.style) {
+      const targetStyle = structuredQuery.attributes.style.toLowerCase();
+      const prodStyle = product.attributes?.style?.toLowerCase();
+      const inNameOrDesc = (product.name || '').toLowerCase().includes(targetStyle) ||
+        (product.description || '').toLowerCase().includes(targetStyle);
+      if (prodStyle !== targetStyle && !inNameOrDesc) {
+        return false;
+      }
+    }
+
+    // 6. Material Attribute Filter
+    if (structuredQuery.attributes?.material) {
+      const targetMat = structuredQuery.attributes.material.toLowerCase();
+      const prodMat = product.attributes?.material?.toLowerCase();
+      const inNameOrDesc = (product.name || '').toLowerCase().includes(targetMat) ||
+        (product.description || '').toLowerCase().includes(targetMat);
+      if (prodMat !== targetMat && !inNameOrDesc) {
+        return false;
+      }
+    }
+
+    // 7. Size Attribute Filter
+    if (structuredQuery.attributes?.size) {
+      const targetSize = structuredQuery.attributes.size.toUpperCase();
+      const prodSize = (product.attributes?.size || '').toUpperCase();
+      const inNameOrDesc = (product.name || '').toUpperCase().includes(targetSize);
+      if (prodSize !== targetSize && !inNameOrDesc) {
+        return false;
+      }
+    }
+
+    // 8. Keywords filter (matches name, description, category, or shopName)
     if (structuredQuery.keywords && structuredQuery.keywords.length > 0) {
       const name = (product.name || '').toLowerCase();
       const desc = (product.description || '').toLowerCase();
@@ -341,6 +657,7 @@ export async function intelligentSearch(query = '', coordinates = null) {
           return {
             structuredQuery: data.structuredQuery || {},
             products: Array.isArray(data.products) ? data.products : [],
+            shops: Array.isArray(data.shops) ? data.shops : [],
             source: 'backend'
           };
         }

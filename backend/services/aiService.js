@@ -1,149 +1,174 @@
-const productService = require('./productService');
+const Product = require('../models/Product');
+const Shop = require('../models/Shop');
+const { parseQuery: coreParseQuery } = require('../../ai/src');
 
 /**
- * Common category synonyms for deterministic rule-based mapping.
- * Maps common natural-language terms to normalized category names.
- * Designed to be extended or replaced by a real AI provider in future phases.
- */
-const CATEGORY_SYNONYMS = {
-  shoe: 'footwear',
-  shoes: 'footwear',
-  sneaker: 'footwear',
-  sneakers: 'footwear',
-  sandal: 'footwear',
-  sandals: 'footwear',
-  boot: 'footwear',
-  boots: 'footwear',
-  slipper: 'footwear',
-  slippers: 'footwear',
-  phone: 'electronics',
-  laptop: 'electronics',
-  earbuds: 'electronics',
-  headphones: 'electronics',
-  charger: 'electronics',
-  tablet: 'electronics',
-  shirt: 'clothing',
-  shirts: 'clothing',
-  tshirt: 'clothing',
-  tshirts: 'clothing',
-  pant: 'clothing',
-  pants: 'clothing',
-  jeans: 'clothing',
-  jacket: 'clothing',
-  jackets: 'clothing',
-  dress: 'clothing',
-  dresses: 'clothing',
-  belt: 'accessories',
-  belts: 'accessories',
-  wallet: 'accessories',
-  wallets: 'accessories',
-  watch: 'accessories',
-  watches: 'accessories',
-  bag: 'accessories',
-  bags: 'accessories',
-  sunglasses: 'accessories'
-};
-
-/**
- * Parse a natural-language query into structured search parameters.
- * Uses deterministic rule-based extraction (no external AI provider).
+ * Parses a natural language search query using the standalone /ai NLP engine.
+ * Ensures backward-compatibility by mapping top-level shortcut fields (maxPrice, minPrice, latitude, longitude)
+ * alongside the rich structured query.
  *
  * @param {string} query - Natural language search query
  * @param {number|undefined} latitude - Optional latitude from request body
  * @param {number|undefined} longitude - Optional longitude from request body
- * @returns {object} structuredQuery with available fields only
+ * @returns {object} Normalized structuredQuery object
  */
 const parseQuery = (query, latitude, longitude) => {
-  const structuredQuery = {};
-  let remainingQuery = query.toLowerCase().trim();
-
-  // Extract maxPrice from patterns like "under 2000", "below 500", "less than 1000"
-  const pricePattern = /(?:under|below|less than|within|upto|up to)\s+(\d+(?:\.\d+)?)/i;
-  const priceMatch = remainingQuery.match(pricePattern);
-  if (priceMatch) {
-    structuredQuery.maxPrice = parseFloat(priceMatch[1]);
-    remainingQuery = remainingQuery.replace(priceMatch[0], '').trim();
+  const options = {};
+  if (latitude !== undefined && latitude !== null && !isNaN(Number(latitude))) {
+    options.latitude = parseFloat(latitude);
+  }
+  if (longitude !== undefined && longitude !== null && !isNaN(Number(longitude))) {
+    options.longitude = parseFloat(longitude);
   }
 
-  // Remove common filler phrases
-  remainingQuery = remainingQuery
-    .replace(/\b(i need|i want|looking for|search for|find me|show me|get me|near me|nearby)\b/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const structured = coreParseQuery(query, options);
 
-  // Extract category from remaining words using synonym map
-  const words = remainingQuery.split(/\s+/).filter((w) => w.length > 0);
-  let category = null;
-  const keywordWords = [];
-
-  for (const word of words) {
-    const cleanWord = word.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    if (!category && CATEGORY_SYNONYMS[cleanWord]) {
-      category = CATEGORY_SYNONYMS[cleanWord];
-    } else if (cleanWord.length > 0) {
-      keywordWords.push(cleanWord);
-    }
+  // Backward-compatibility mappings for frontend & legacy API consumers
+  if (structured.price.max !== null) {
+    structured.maxPrice = structured.price.max;
+  }
+  if (structured.price.min !== null) {
+    structured.minPrice = structured.price.min;
+  }
+  if (structured.location && structured.location.latitude !== null && structured.location.longitude !== null) {
+    structured.latitude = structured.location.latitude;
+    structured.longitude = structured.location.longitude;
   }
 
-  if (category) {
-    structuredQuery.category = category;
-  }
-
-  if (keywordWords.length > 0) {
-    structuredQuery.keywords = keywordWords;
-  }
-
-  // Pass through location coordinates if provided
-  if (latitude !== undefined && latitude !== null) {
-    structuredQuery.latitude = parseFloat(latitude);
-  }
-
-  if (longitude !== undefined && longitude !== null) {
-    structuredQuery.longitude = parseFloat(longitude);
-  }
-
-  return structuredQuery;
+  return structured;
 };
 
 /**
- * Perform intelligent search by parsing the natural-language query
- * and delegating database access to the existing productService.
- *
- * AI service does NOT access MongoDB directly.
+ * Intelligent AI-powered search querying real MongoDB Product and Shop collections.
  *
  * @param {object} params
  * @param {string} params.query - Natural language search query
  * @param {number|undefined} params.latitude - Optional latitude
  * @param {number|undefined} params.longitude - Optional longitude
- * @returns {object} { structuredQuery, products }
+ * @returns {Promise<{ structuredQuery: object, products: Array, shops?: Array }>}
  */
 const intelligentSearch = async ({ query, latitude, longitude }) => {
-  // Step 1: Parse the natural language query into structured parameters
+  // Step 1: Parse the natural language query using the standalone /ai module
   const structuredQuery = parseQuery(query, latitude, longitude);
 
-  // Step 2: Build productService search parameters from structured query
-  const searchParams = {};
+  // Step 2: Handle Shop Search Intent
+  if (structuredQuery.intent === 'shop_search') {
+    let shopFilter = {};
+    if (structuredQuery.category) {
+      shopFilter.shopType = new RegExp(structuredQuery.category.trim(), 'i');
+    }
 
+    let shops = [];
+    if (structuredQuery.location && structuredQuery.location.latitude !== null && structuredQuery.location.longitude !== null) {
+      try {
+        shops = await Shop.find({
+          ...shopFilter,
+          location: {
+            $near: {
+              $geometry: {
+                type: 'Point',
+                coordinates: [structuredQuery.location.longitude, structuredQuery.location.latitude]
+              },
+              $maxDistance: 50000 // 50km radius
+            }
+          }
+        });
+      } catch {
+        shops = await Shop.find(shopFilter);
+      }
+    } else {
+      shops = await Shop.find(shopFilter);
+    }
+
+    return {
+      structuredQuery,
+      products: [],
+      shops: shops.map((s) => s.toPublicJSON())
+    };
+  }
+
+  // Step 3: Handle Product Search & Browse Intents against real MongoDB Product collection
+  const filter = {};
+
+  // Category filter (case-insensitive exact match)
   if (structuredQuery.category) {
-    searchParams.category = structuredQuery.category;
+    filter.category = new RegExp('^' + structuredQuery.category.trim() + '$', 'i');
   }
 
-  // Combine keywords into a single search term for productService
-  if (structuredQuery.keywords && structuredQuery.keywords.length > 0) {
-    searchParams.search = structuredQuery.keywords.join(' ');
+  // Price constraints (min, max, or range)
+  const priceFilter = {};
+  if (structuredQuery.price.min !== null) {
+    priceFilter.$gte = structuredQuery.price.min;
+  }
+  if (structuredQuery.price.max !== null) {
+    priceFilter.$lte = structuredQuery.price.max;
+  }
+  if (Object.keys(priceFilter).length > 0) {
+    filter.price = priceFilter;
   }
 
-  // Step 3: Delegate database query to existing productService
-  let products = await productService.getProducts(searchParams);
-
-  // Step 4: Apply maxPrice filter in-memory (productService does not support price filtering)
-  if (structuredQuery.maxPrice !== undefined) {
-    products = products.filter((product) => product.price <= structuredQuery.maxPrice);
+  // Keywords and Product Attributes matching
+  // Note: Product schema currently contains name, category, description, price, shopId, stock, available.
+  // Attributes (color, style, material) are contained within name/description text in MongoDB.
+  const searchTokens = [];
+  if (Array.isArray(structuredQuery.keywords) && structuredQuery.keywords.length > 0) {
+    searchTokens.push(...structuredQuery.keywords);
   }
+  if (structuredQuery.attributes.color && !searchTokens.includes(structuredQuery.attributes.color)) {
+    searchTokens.push(structuredQuery.attributes.color);
+  }
+  if (structuredQuery.attributes.style && !searchTokens.includes(structuredQuery.attributes.style)) {
+    searchTokens.push(structuredQuery.attributes.style);
+  }
+  if (structuredQuery.attributes.material && !searchTokens.includes(structuredQuery.attributes.material)) {
+    searchTokens.push(structuredQuery.attributes.material);
+  }
+
+  if (searchTokens.length > 0) {
+    const tokenRegex = new RegExp(searchTokens.join('|'), 'i');
+    filter.$or = [
+      { name: tokenRegex },
+      { description: tokenRegex }
+    ];
+  }
+
+  // Step 4: Proximity ranking / filtering if location coordinates are available
+  if (structuredQuery.location && structuredQuery.location.latitude !== null && structuredQuery.location.longitude !== null) {
+    try {
+      const nearbyShops = await Shop.find({
+        location: {
+          $near: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [structuredQuery.location.longitude, structuredQuery.location.latitude]
+            },
+            $maxDistance: 50000 // 50km radius
+          }
+        }
+      });
+
+      if (nearbyShops && nearbyShops.length > 0) {
+        const shopIds = nearbyShops.map((s) => s._id);
+        const geoFilter = { ...filter, shopId: { $in: shopIds } };
+        const geoProducts = await Product.find(geoFilter);
+        if (geoProducts && geoProducts.length > 0) {
+          return {
+            structuredQuery,
+            products: geoProducts.map((p) => p.toPublicJSON())
+          };
+        }
+      }
+    } catch {
+      // If geospatial search is unsupported or fails, gracefully proceed with standard query
+    }
+  }
+
+  // Step 5: Execute MongoDB Product Query
+  const products = await Product.find(filter);
 
   return {
     structuredQuery,
-    products
+    products: products.map((product) => product.toPublicJSON())
   };
 };
 

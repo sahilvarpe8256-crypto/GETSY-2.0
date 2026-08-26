@@ -1,4 +1,4 @@
-import { Sparkles, X, RotateCcw, MapPin, Tag, IndianRupee, Key } from 'lucide-react';
+import { Sparkles, X, RotateCcw, MapPin, Tag, IndianRupee } from 'lucide-react';
 import './AiSearchInsights.css';
 
 /**
@@ -13,19 +13,34 @@ function formatCategory(cat) {
     ornaments: 'Ornaments',
     hardware: 'Hardware',
     electronics: 'Electronics',
-    groceries: 'Groceries'
+    groceries: 'Groceries',
+    grocery: 'Groceries',
+    beauty: 'Beauty',
+    sports: 'Sports',
+    books: 'Books',
+    home: 'Home'
   };
   const lower = cat.toLowerCase().trim();
   return map[lower] || lower.charAt(0).toUpperCase() + lower.slice(1);
 }
 
 /**
- * Format maxPrice to currency string
+ * Format price values (min, max, or range) to user-friendly currency string
  */
-function formatPrice(price) {
-  const num = Number(price);
-  if (isNaN(num)) return '';
-  return `Under ₹${num.toLocaleString('en-IN')}`;
+function formatPriceLabel(priceObj, maxPriceFallback, minPriceFallback) {
+  const min = priceObj?.min !== undefined && priceObj?.min !== null ? Number(priceObj.min) : (minPriceFallback !== undefined && minPriceFallback !== null ? Number(minPriceFallback) : null);
+  const max = priceObj?.max !== undefined && priceObj?.max !== null ? Number(priceObj.max) : (maxPriceFallback !== undefined && maxPriceFallback !== null ? Number(maxPriceFallback) : null);
+
+  if (min !== null && !isNaN(min) && max !== null && !isNaN(max)) {
+    return `₹${min.toLocaleString('en-IN')} – ₹${max.toLocaleString('en-IN')}`;
+  }
+  if (max !== null && !isNaN(max)) {
+    return `Under ₹${max.toLocaleString('en-IN')}`;
+  }
+  if (min !== null && !isNaN(min)) {
+    return `Above ₹${min.toLocaleString('en-IN')}`;
+  }
+  return '';
 }
 
 /**
@@ -46,26 +61,49 @@ export default function AiSearchInsights({
     return null;
   }
 
-  const { category, maxPrice, keywords, latitude, longitude } = structuredQuery;
+  const { category, maxPrice, minPrice, price, keywords, location, attributes, latitude, longitude } = structuredQuery;
 
   const hasCategory = Boolean(category && typeof category === 'string');
-  const hasPrice = maxPrice !== undefined && maxPrice !== null && !isNaN(Number(maxPrice));
+
+  const priceLabel = formatPriceLabel(price, maxPrice, minPrice);
+  const hasPrice = Boolean(priceLabel);
+
+  // Location handling
+  const locName = location?.name ? location.name.charAt(0).toUpperCase() + location.name.slice(1) : null;
+  const hasLocation = Boolean(
+    locName ||
+    (latitude !== undefined && latitude !== null && !isNaN(Number(latitude)) && longitude !== undefined && longitude !== null && !isNaN(Number(longitude))) ||
+    (location?.latitude !== undefined && location?.latitude !== null && location?.longitude !== undefined && location?.longitude !== null)
+  );
+  const locationLabel = locName ? `Near ${locName}` : 'Nearby Location';
+
+  // Attributes handling
+  const color = attributes?.color || null;
+  const style = attributes?.style || null;
+  const material = attributes?.material || null;
+  const size = attributes?.size || null;
+
+  // Filter keywords to not duplicate recognized attributes
+  const attrTokens = new Set([
+    (color || '').toLowerCase(),
+    (style || '').toLowerCase(),
+    (material || '').toLowerCase(),
+    (size || '').toLowerCase()
+  ]);
+
   const validKeywords = Array.isArray(keywords)
-    ? keywords.filter((k) => k && typeof k === 'string' && k.trim().length > 0)
+    ? keywords.filter((k) => k && typeof k === 'string' && k.trim().length > 0 && !attrTokens.has(k.toLowerCase().trim()))
     : [];
-  const hasLocation =
-    latitude !== undefined &&
-    latitude !== null &&
-    !isNaN(Number(latitude)) &&
-    longitude !== undefined &&
-    longitude !== null &&
-    !isNaN(Number(longitude));
 
   const totalChips =
     (hasCategory ? 1 : 0) +
     (hasPrice ? 1 : 0) +
-    validKeywords.length +
-    (hasLocation ? 1 : 0);
+    (hasLocation ? 1 : 0) +
+    (color ? 1 : 0) +
+    (style ? 1 : 0) +
+    (material ? 1 : 0) +
+    (size ? 1 : 0) +
+    validKeywords.length;
 
   if (totalChips === 0) {
     return null;
@@ -123,23 +161,103 @@ export default function AiSearchInsights({
           </div>
         )}
 
-        {/* Max Price Chip */}
+        {/* Price / Price Range Chip */}
         {hasPrice && (
           <div className="ai-insight-chip ai-insight-chip--price" id="ai-chip-price">
             <IndianRupee size={12} className="ai-insight-chip-icon" aria-hidden="true" />
-            <span className="ai-insight-chip-text">{formatPrice(maxPrice)}</span>
+            <span className="ai-insight-chip-text">{priceLabel}</span>
             <button
               type="button"
               className="ai-insight-chip-remove"
-              onClick={() => handleRemove('maxPrice')}
-              aria-label={`Remove price filter: under ₹${maxPrice}`}
+              onClick={() => handleRemove('price')}
+              aria-label={`Remove price filter: ${priceLabel}`}
             >
               <X size={12} aria-hidden="true" />
             </button>
           </div>
         )}
 
-        {/* Keyword Chips */}
+        {/* Location Chip */}
+        {hasLocation && (
+          <div className="ai-insight-chip ai-insight-chip--location" id="ai-chip-location">
+            <MapPin size={13} className="ai-insight-chip-icon" aria-hidden="true" />
+            <span className="ai-insight-chip-text">{locationLabel}</span>
+            <button
+              type="button"
+              className="ai-insight-chip-remove"
+              onClick={() => handleRemove('location')}
+              aria-label={`Remove location filter: ${locationLabel}`}
+            >
+              <X size={12} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
+        {/* Color Attribute Chip */}
+        {color && (
+          <div className="ai-insight-chip ai-insight-chip--keyword" id="ai-chip-color">
+            <span className="ai-insight-chip-hash">●</span>
+            <span className="ai-insight-chip-text">Color: {color.charAt(0).toUpperCase() + color.slice(1)}</span>
+            <button
+              type="button"
+              className="ai-insight-chip-remove"
+              onClick={() => handleRemove('color')}
+              aria-label={`Remove color filter: ${color}`}
+            >
+              <X size={12} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
+        {/* Style Attribute Chip */}
+        {style && (
+          <div className="ai-insight-chip ai-insight-chip--keyword" id="ai-chip-style">
+            <span className="ai-insight-chip-hash">★</span>
+            <span className="ai-insight-chip-text">Style: {style.charAt(0).toUpperCase() + style.slice(1)}</span>
+            <button
+              type="button"
+              className="ai-insight-chip-remove"
+              onClick={() => handleRemove('style')}
+              aria-label={`Remove style filter: ${style}`}
+            >
+              <X size={12} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
+        {/* Material Attribute Chip */}
+        {material && (
+          <div className="ai-insight-chip ai-insight-chip--keyword" id="ai-chip-material">
+            <span className="ai-insight-chip-hash">◈</span>
+            <span className="ai-insight-chip-text">Material: {material.charAt(0).toUpperCase() + material.slice(1)}</span>
+            <button
+              type="button"
+              className="ai-insight-chip-remove"
+              onClick={() => handleRemove('material')}
+              aria-label={`Remove material filter: ${material}`}
+            >
+              <X size={12} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
+        {/* Size Attribute Chip */}
+        {size && (
+          <div className="ai-insight-chip ai-insight-chip--keyword" id="ai-chip-size">
+            <span className="ai-insight-chip-hash">⬚</span>
+            <span className="ai-insight-chip-text">Size: {size.toUpperCase()}</span>
+            <button
+              type="button"
+              className="ai-insight-chip-remove"
+              onClick={() => handleRemove('size')}
+              aria-label={`Remove size filter: ${size}`}
+            >
+              <X size={12} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
+        {/* General Keyword Chips */}
         {validKeywords.map((keyword) => (
           <div
             key={`kw-${keyword}`}
@@ -158,22 +276,6 @@ export default function AiSearchInsights({
             </button>
           </div>
         ))}
-
-        {/* Location Chip */}
-        {hasLocation && (
-          <div className="ai-insight-chip ai-insight-chip--location" id="ai-chip-location">
-            <MapPin size={13} className="ai-insight-chip-icon" aria-hidden="true" />
-            <span className="ai-insight-chip-text">Nearby Location</span>
-            <button
-              type="button"
-              className="ai-insight-chip-remove"
-              onClick={() => handleRemove('location')}
-              aria-label="Remove nearby location filter"
-            >
-              <X size={12} aria-hidden="true" />
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
