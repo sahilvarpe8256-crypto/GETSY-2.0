@@ -271,9 +271,16 @@ export default function Search() {
         {/* Results Grid */}
         <div className="search-results-grid">
           {loading ? (
-            <div className="search-skeleton-grid" id="search-skeleton-grid">
+            <div className="search-skeleton-grid" id="search-skeleton-grid" aria-label="Loading search results" role="status">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="product-skeleton-card" />
+                <div key={i} className="product-skeleton-card">
+                  <div className="skeleton-img" />
+                  <div className="skeleton-body">
+                    <div className="skeleton-line skeleton-line--title" />
+                    <div className="skeleton-line skeleton-line--subtitle" />
+                    <div className="skeleton-line skeleton-line--price" />
+                  </div>
+                </div>
               ))}
             </div>
           ) : (
