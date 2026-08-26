@@ -24,6 +24,14 @@
   margin-bottom: 16px;
 }
 
+.footer-logo-img {
+  height: 36px;
+  width: auto;
+  max-width: 44px;
+  object-fit: contain;
+  display: block;
+}
+
 .footer-logo-text {
   font-size: 22px;
   font-weight: 700;
@@ -100,5 +108,10 @@
 
   .footer-main {
     padding: 40px 0 32px;
+  }
+
+  .footer-logo-img {
+    height: 30px;
+    max-width: 38px;
   }
 }

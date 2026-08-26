@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLocation } from '../../context/LocationContext';
 import HeroSection from '../../components/landing/HeroSection';
 import SearchBar from '../../components/common/SearchBar';
@@ -10,6 +11,7 @@ import './Home.css';
 
 export default function Home() {
   const { location } = useLocation();
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('all');
   const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
@@ -32,7 +34,6 @@ export default function Home() {
 
   const handleExploreShops = () => {
     requireLocation(() => {
-      /* Phase 1: scroll to discover shops section */
       const el = document.getElementById('discover-shops');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     });
@@ -40,30 +41,36 @@ export default function Home() {
 
   const handleBrowseCategories = () => {
     requireLocation(() => {
-      /* Phase 1: scroll to categories area */
-      const el = document.getElementById('categories-section');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      navigate('/categories');
     });
   };
 
   const handleSearch = (query) => {
     requireLocation(() => {
-      /* Phase 1: no real search — visual only */
-      console.log('Search:', query, 'Location:', location);
+      navigate(query ? `/search?q=${encodeURIComponent(query)}` : '/search');
+    });
+  };
+
+  const handleCategoryClick = (catId) => {
+    requireLocation(() => {
+      setActiveCategory(catId);
+      navigate(catId === 'all' ? '/categories' : `/categories?cat=${catId}`);
     });
   };
 
   const handleShopClick = (shop) => {
     requireLocation(() => {
-      /* Phase 1: visual confirmation only */
-      console.log('Shop clicked:', shop.name, 'Location:', location);
+      // Navigate to categories page filtered by shop category
+      if (shop.category) {
+        navigate(`/categories?cat=${shop.category.toLowerCase()}`);
+      } else {
+        navigate('/categories');
+      }
     });
   };
 
   const handleLocationSelected = () => {
-    /* Execute the pending action now that location is set */
     if (pendingAction) {
-      /* Small delay so modal close animation completes */
       setTimeout(() => {
         pendingAction();
         setPendingAction(null);
@@ -89,7 +96,7 @@ export default function Home() {
               key={cat.id}
               label={cat.label}
               isActive={activeCategory === cat.id}
-              onClick={() => setActiveCategory(cat.id)}
+              onClick={() => handleCategoryClick(cat.id)}
             />
           ))}
         </div>

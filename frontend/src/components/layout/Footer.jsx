@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import getsyLogo from '../../assets/getsy-logo.png.png';
 import './Footer.css';
 
 export default function Footer() {
@@ -9,15 +10,11 @@ export default function Footer() {
           {/* Brand column */}
           <div className="footer-brand">
             <div className="footer-logo">
-              <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
-                <rect x="4" y="12" width="32" height="24" rx="4" fill="#0e8c7f" />
-                <rect x="8" y="16" width="24" height="16" rx="2" fill="#ffffff" opacity="0.3" />
-                <path d="M14 12V8a6 6 0 0 1 12 0v4" stroke="#0e8c7f" strokeWidth="3" fill="none" />
-                <circle cx="16" cy="22" r="2" fill="#ffffff" />
-                <circle cx="24" cy="22" r="2" fill="#ffffff" />
-                <circle cx="20" cy="27" r="2" fill="#ffffff" />
-                <circle cx="20" cy="22" r="1.5" fill="#e8922d" />
-              </svg>
+              <img
+                src={getsyLogo}
+                alt="Getsy Logo"
+                className="footer-logo-img"
+              />
               <span className="footer-logo-text">Getsy</span>
             </div>
             <p className="footer-description">
