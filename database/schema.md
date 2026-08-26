@@ -93,10 +93,9 @@ Shop location must contain geographic coordinates.
 Initial structure:
 
 {
-  "latitude": 19.57,
-  "longitude": 74.21
+  "type": "Point",
+  "coordinates": [74.21, 19.57]
 }
-
 The final geospatial representation will be finalized before implementation of nearby-shop queries.
 
 ---
