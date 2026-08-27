@@ -56,7 +56,7 @@ const FILLER_PHRASES = [
   'can you show', 'near me', 'nearby', 'search', 'find'
 ];
 
-// Common stop words to exclude from keyword extraction
+// Common stop words to exclude from keyword extraction and fuzzy matching
 const STOP_WORDS = new Set([
   'a', 'an', 'the', 'and', 'or', 'of', 'for', 'with', 'in', 'on',
   'at', 'to', 'from', 'by', 'near', 'around', 'about', 'me', 'my',
@@ -65,8 +65,117 @@ const STOP_WORDS = new Set([
   'does', 'did', 'will', 'would', 'can', 'could', 'should', 'want',
   'need', 'please', 'some', 'any', 'all', 'item', 'items', 'product',
   'products', 'good', 'best', 'cheap', 'affordable', 'top', 'buy',
-  'purchase', 'shop', 'shops', 'store', 'stores'
+  'purchase', 'shop', 'shops', 'store', 'stores',
+  'than', 'more', 'less', 'under', 'below', 'above', 'over', 'between',
+  'upto', 'within', 'max', 'min', 'greater', 'starting'
 ]);
+
+/**
+ * Computes Damerau-Levenshtein distance (insertions, deletions, substitutions, transpositions).
+ * Pure and deterministic ₹0 string metric.
+ *
+ * @param {string} a - Source string
+ * @param {string} b - Target string
+ * @returns {number} Minimum edit distance
+ */
+function damerauLevenshtein(a, b) {
+  if (a === b) return 0;
+  const lenA = a.length;
+  const lenB = b.length;
+  if (lenA === 0) return lenB;
+  if (lenB === 0) return lenA;
+
+  const matrix = [];
+  for (let i = 0; i <= lenA; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= lenB; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= lenA; i++) {
+    for (let j = 1; j <= lenB; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let min = Math.min(
+        matrix[i - 1][j] + 1,         // deletion
+        matrix[i][j - 1] + 1,         // insertion
+        matrix[i - 1][j - 1] + cost   // substitution
+      );
+
+      // Transposition
+      if (
+        i > 1 &&
+        j > 1 &&
+        a[i - 1] === b[j - 2] &&
+        a[i - 2] === b[j - 1]
+      ) {
+        min = Math.min(min, matrix[i - 2][j - 2] + 1);
+      }
+
+      matrix[i][j] = min;
+    }
+  }
+
+  return matrix[lenA][lenB];
+}
+
+/**
+ * Returns maximum allowed edit distance based on target word length.
+ * Strict thresholds prevent false positives on short words:
+ * - <= 3 chars: 0 (exact matches only)
+ * - 4-6 chars: 1
+ * - >= 7 chars: 2
+ *
+ * @param {string} target - Target dictionary term
+ * @returns {number} Maximum allowed edit distance
+ */
+function getMaxEditDistance(target) {
+  const len = typeof target === 'string' ? target.length : 0;
+  if (len <= 3) return 0;
+  if (len <= 6) return 1;
+  return 2;
+}
+
+/**
+ * Finds the closest matching dictionary term for a candidate token.
+ * Returns null if no term satisfies the distance threshold.
+ *
+ * @param {string} token - Input word from query
+ * @param {Array<string>} dictionary - Controlled vocabulary list
+ * @returns {{ term: string, originalTerm: string, distance: number, matchedToken: string } | null}
+ */
+function findFuzzyMatch(token, dictionary) {
+  if (!token || typeof token !== 'string') return null;
+  const clean = token.toLowerCase().trim();
+  if (clean.length < 3) return null;
+  if (STOP_WORDS.has(clean) || !isNaN(Number(clean))) return null;
+
+  let bestMatch = null;
+  let bestDistance = Infinity;
+
+  for (const term of dictionary) {
+    const termClean = term.toLowerCase().trim();
+    const maxDist = getMaxEditDistance(termClean);
+    if (maxDist === 0) continue;
+
+    // Fast length difference pre-filter
+    if (Math.abs(clean.length - termClean.length) > maxDist) continue;
+
+    const dist = damerauLevenshtein(clean, termClean);
+    if (dist <= maxDist && dist < bestDistance) {
+      bestDistance = dist;
+      bestMatch = {
+        term: termClean,
+        originalTerm: term,
+        distance: dist,
+        matchedToken: clean
+      };
+      if (dist === 1 && termClean.length <= 6) break;
+    }
+  }
+
+  return bestMatch;
+}
 
 /**
  * Parses a natural-language query into a structured object.
@@ -113,6 +222,7 @@ function parseQuery(query, options = {}) {
 
   let text = ' ' + originalQuery.toLowerCase().trim() + ' ';
   let tokensRemoved = [];
+  let fuzzyMatchCount = 0;
 
   // =========================================================================
   // 1. INTENT CLASSIFICATION
@@ -130,7 +240,7 @@ function parseQuery(query, options = {}) {
   }
 
   // =========================================================================
-  // 2. LOCATION EXTRACTION & RESOLUTION
+  // 2. LOCATION EXTRACTION & RESOLUTION (Exact + Fuzzy)
   // =========================================================================
   // Try pattern: (near|in|around|at|from|to)\s+([a-z_]+(?:\s+[a-z_]+)?)
   let extractedLocName = null;
@@ -140,23 +250,36 @@ function parseQuery(query, options = {}) {
     const candidate = locationPrepMatch[1].trim();
     const candidateKey = candidate.replace(/\s+/g, '_');
     
+    // A. Exact location match
     if (LOCATIONS[candidateKey] || LOCATIONS[candidate]) {
       extractedLocName = candidate;
       text = text.replace(locationPrepMatch[0], ' ');
       tokensRemoved.push(locationPrepMatch[0]);
     } else {
-      // Check if candidate is not a common category/stopword before treating as unknown location
-      const firstWord = candidate.split(/\s+/)[0];
-      if (!SYNONYM_MAP[firstWord] && !STOP_WORDS.has(firstWord) && !ATTRIBUTE_VALUES.colors.includes(firstWord)) {
-        extractedLocName = candidate;
+      // B. Fuzzy location match with preposition
+      const fuzzyLoc = findFuzzyMatch(candidateKey, Object.keys(LOCATIONS)) ||
+        findFuzzyMatch(candidate.split(/\s+/)[0], Object.keys(LOCATIONS));
+
+      if (fuzzyLoc && LOCATIONS[fuzzyLoc.term]) {
+        extractedLocName = fuzzyLoc.term.replace(/_/g, ' ');
+        fuzzyMatchCount++;
         text = text.replace(locationPrepMatch[0], ' ');
         tokensRemoved.push(locationPrepMatch[0]);
+      } else {
+        // Check if candidate is not a common category/stopword before treating as unknown location
+        const firstWord = candidate.split(/\s+/)[0];
+        if (!SYNONYM_MAP[firstWord] && !STOP_WORDS.has(firstWord) && !ATTRIBUTE_VALUES.colors.includes(firstWord)) {
+          extractedLocName = candidate;
+          text = text.replace(locationPrepMatch[0], ' ');
+          tokensRemoved.push(locationPrepMatch[0]);
+        }
       }
     }
   }
 
-  // Fallback: check if any known location name appears standalone in text
+  // C. Fallback: check if any known location name appears standalone in text (Exact + Fuzzy)
   if (!extractedLocName) {
+    // Exact standalone check
     for (const locKey of Object.keys(LOCATIONS)) {
       const locDisplay = locKey.replace(/_/g, ' ');
       const locRegex = new RegExp(`\\b${locDisplay}\\b`, 'i');
@@ -165,6 +288,22 @@ function parseQuery(query, options = {}) {
         text = text.replace(locRegex, ' ');
         tokensRemoved.push(locDisplay);
         break;
+      }
+    }
+
+    // Fuzzy standalone check across individual words
+    if (!extractedLocName) {
+      const words = text.replace(/[^a-z\s]/gi, ' ').split(/\s+/).filter((w) => w.length >= 4);
+      for (const w of words) {
+        const fuzzyStandalone = findFuzzyMatch(w, Object.keys(LOCATIONS));
+        if (fuzzyStandalone && LOCATIONS[fuzzyStandalone.term]) {
+          extractedLocName = fuzzyStandalone.term.replace(/_/g, ' ');
+          fuzzyMatchCount++;
+          const wordRegex = new RegExp(`\\b${w}\\b`, 'i');
+          text = text.replace(wordRegex, ' ');
+          tokensRemoved.push(w);
+          break;
+        }
       }
     }
   }
@@ -225,9 +364,9 @@ function parseQuery(query, options = {}) {
   }
 
   // =========================================================================
-  // 4. PRODUCT ATTRIBUTES EXTRACTION (Color, Style, Material, Size)
+  // 4. PRODUCT ATTRIBUTES EXTRACTION (Exact + Fuzzy)
   // =========================================================================
-  // A. Color
+  // A. Color (Exact first, then Fuzzy)
   for (const color of ATTRIBUTE_VALUES.colors) {
     const colorRegex = new RegExp(`\\b${color}\\b`, 'i');
     if (colorRegex.test(text)) {
@@ -236,8 +375,21 @@ function parseQuery(query, options = {}) {
       break;
     }
   }
+  if (!result.attributes.color) {
+    const words = text.replace(/[^a-z\s]/gi, ' ').split(/\s+/).filter((w) => w.length >= 3);
+    for (const w of words) {
+      const fuzzyColor = findFuzzyMatch(w, ATTRIBUTE_VALUES.colors);
+      if (fuzzyColor) {
+        result.attributes.color = fuzzyColor.term;
+        fuzzyMatchCount++;
+        const wordRegex = new RegExp(`\\b${w}\\b`, 'i');
+        text = text.replace(wordRegex, ' ');
+        break;
+      }
+    }
+  }
 
-  // B. Style
+  // B. Style (Exact first, then Fuzzy)
   for (const style of ATTRIBUTE_VALUES.styles) {
     const styleRegex = new RegExp(`\\b${style}\\b`, 'i');
     if (styleRegex.test(text)) {
@@ -246,8 +398,21 @@ function parseQuery(query, options = {}) {
       break;
     }
   }
+  if (!result.attributes.style) {
+    const words = text.replace(/[^a-z\s]/gi, ' ').split(/\s+/).filter((w) => w.length >= 4);
+    for (const w of words) {
+      const fuzzyStyle = findFuzzyMatch(w, ATTRIBUTE_VALUES.styles);
+      if (fuzzyStyle) {
+        result.attributes.style = (fuzzyStyle.term === 'sporty' || fuzzyStyle.term === 'sport') ? 'sports' : fuzzyStyle.term;
+        fuzzyMatchCount++;
+        const wordRegex = new RegExp(`\\b${w}\\b`, 'i');
+        text = text.replace(wordRegex, ' ');
+        break;
+      }
+    }
+  }
 
-  // C. Material
+  // C. Material (Exact first, then Fuzzy)
   for (const material of ATTRIBUTE_VALUES.materials) {
     const matRegex = new RegExp(`\\b${material}\\b`, 'i');
     if (matRegex.test(text)) {
@@ -256,15 +421,28 @@ function parseQuery(query, options = {}) {
       break;
     }
   }
+  if (!result.attributes.material) {
+    const words = text.replace(/[^a-z\s]/gi, ' ').split(/\s+/).filter((w) => w.length >= 4);
+    for (const w of words) {
+      const fuzzyMat = findFuzzyMatch(w, ATTRIBUTE_VALUES.materials);
+      if (fuzzyMat) {
+        result.attributes.material = fuzzyMat.term;
+        fuzzyMatchCount++;
+        const wordRegex = new RegExp(`\\b${w}\\b`, 'i');
+        text = text.replace(wordRegex, ' ');
+        break;
+      }
+    }
+  }
 
-  // D. Size
+  // D. Size (Exact pattern matching)
   // Pattern 1: "size L", "size 8", "size 42", "size XL"
   const sizeExplicitMatch = text.match(/\bsize\s*[:\s]\s*([a-z0-9]+)\b/i);
   if (sizeExplicitMatch) {
     result.attributes.size = sizeExplicitMatch[1].toUpperCase();
     text = text.replace(sizeExplicitMatch[0], ' ');
   } else {
-    // Pattern 2: Standalone size tokens (xxl, xl, xs, xxxl) or "size L"
+    // Pattern 2: Standalone size tokens (xxxl, xxl, xl, xs) or "size L"
     const sizeStandaloneMatch = text.match(/\b(xxxl|xxl|xl|xs)\b/i);
     if (sizeStandaloneMatch) {
       result.attributes.size = sizeStandaloneMatch[1].toUpperCase();
@@ -273,7 +451,7 @@ function parseQuery(query, options = {}) {
   }
 
   // =========================================================================
-  // 5. CATEGORY EXTRACTION
+  // 5. CATEGORY EXTRACTION (Exact first, then Fuzzy)
   // =========================================================================
   for (const synonym of SORTED_SYNONYMS) {
     const synRegex = new RegExp(`\\b${synonym}\\b`, 'i');
@@ -281,6 +459,20 @@ function parseQuery(query, options = {}) {
       result.category = SYNONYM_MAP[synonym];
       text = text.replace(synRegex, ' ');
       break;
+    }
+  }
+
+  if (!result.category) {
+    const words = text.replace(/[^a-z\s]/gi, ' ').split(/\s+/).filter((w) => w.length >= 4);
+    for (const w of words) {
+      const fuzzySyn = findFuzzyMatch(w, SORTED_SYNONYMS);
+      if (fuzzySyn && SYNONYM_MAP[fuzzySyn.term]) {
+        result.category = SYNONYM_MAP[fuzzySyn.term];
+        fuzzyMatchCount++;
+        const wordRegex = new RegExp(`\\b${w}\\b`, 'i');
+        text = text.replace(wordRegex, ' ');
+        break;
+      }
     }
   }
 
@@ -295,18 +487,14 @@ function parseQuery(query, options = {}) {
   // =========================================================================
   // 7. KEYWORDS EXTRACTION
   // =========================================================================
-  // Gather non-filler, non-stopword tokens from original query that add search value
-  // Also keep detected attributes (like color/style) in keywords for broad text search compatibility
   const extractedKeywords = [];
 
-  // Add recognized descriptive attributes to keywords if present in original query
   if (result.attributes.color) extractedKeywords.push(result.attributes.color);
   if (result.attributes.style) extractedKeywords.push(result.attributes.style);
   if (result.attributes.material && !extractedKeywords.includes(result.attributes.material)) {
     extractedKeywords.push(result.attributes.material);
   }
 
-  // Extract any remaining non-trivial descriptive tokens from residual text
   const residualWords = text
     .replace(/[^a-z0-9\s]/gi, ' ')
     .split(/\s+/)
@@ -323,7 +511,7 @@ function parseQuery(query, options = {}) {
   // =========================================================================
   // 8. HEURISTIC CONFIDENCE SCORING (Deterministic 0.0 - 1.0)
   // =========================================================================
-  let score = 0.30; // Baseline for any non-empty query
+  let score = 0.30;
 
   if (result.category) score += 0.25;
   if (result.price.min !== null || result.price.max !== null) score += 0.15;
@@ -344,14 +532,23 @@ function parseQuery(query, options = {}) {
 
   if (result.keywords.length > 0) score += 0.05;
 
-  // Bound score between 0 and 0.98 for heuristic safety
-  result.confidence = Math.min(0.98, Math.max(0.1, Math.round(score * 100) / 100));
+  let finalConfidence = Math.min(0.98, Math.max(0.1, Math.round(score * 100) / 100));
+
+  // Slight confidence penalty if items were derived from typo / fuzzy matching
+  if (fuzzyMatchCount > 0) {
+    finalConfidence = Math.max(0.10, Math.round((finalConfidence - Math.min(0.15, fuzzyMatchCount * 0.05)) * 100) / 100);
+  }
+
+  result.confidence = finalConfidence;
 
   return result;
 }
 
 module.exports = {
   parseQuery,
+  damerauLevenshtein,
+  getMaxEditDistance,
+  findFuzzyMatch,
   ATTRIBUTE_VALUES,
   STOP_WORDS
 };

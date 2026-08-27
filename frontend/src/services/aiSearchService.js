@@ -185,9 +185,18 @@ export const CATEGORY_SYNONYMS = {
 };
 
 const ATTRIBUTE_VALUES = {
-  colors: ['black', 'white', 'red', 'blue', 'brown', 'green', 'yellow', 'grey', 'gray', 'pink', 'orange', 'purple', 'beige', 'maroon', 'navy'],
+  colors: [
+    'black', 'white', 'red', 'blue', 'brown', 'green', 'yellow',
+    'grey', 'gray', 'pink', 'orange', 'purple', 'beige', 'maroon',
+    'navy', 'teal', 'cream', 'olive'
+  ],
   styles: ['formal', 'casual', 'sports', 'party', 'ethnic', 'traditional', 'vintage', 'modern', 'classic', 'designer'],
-  materials: ['leather', 'cotton', 'denim', 'silk', 'gold', 'silver', 'wool', 'woolen', 'linen', 'polyester', 'nylon', 'velvet'],
+  materials: [
+    'leather', 'cotton', 'denim', 'silk', 'gold', 'silver',
+    'wool', 'woolen', 'linen', 'polyester', 'nylon', 'velvet',
+    'canvas', 'plastic', 'metal', 'wood', 'wooden', 'ceramic',
+    'brass', 'copper'
+  ],
   sizes: ['xxxl', 'xxl', 'xl', 'xs', 's', 'm', 'l']
 };
 
@@ -198,7 +207,9 @@ const STOP_WORDS = new Set([
   'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'can', 'could',
   'should', 'want', 'need', 'please', 'some', 'any', 'all', 'item', 'items',
   'product', 'products', 'good', 'best', 'cheap', 'affordable', 'top', 'buy',
-  'purchase', 'shop', 'shops', 'store', 'stores'
+  'purchase', 'shop', 'shops', 'store', 'stores',
+  'than', 'more', 'less', 'under', 'below', 'above', 'over', 'between',
+  'upto', 'within', 'max', 'min', 'greater', 'starting'
 ]);
 
 /**
@@ -242,6 +253,98 @@ export function getAllMergedProducts() {
   const activeCustom = custom.filter((p) => !deleted.includes(p.id));
 
   return [...activeCustom, ...activeBase];
+}
+
+/**
+ * Computes Damerau-Levenshtein distance (insertions, deletions, substitutions, transpositions).
+ * Pure and deterministic ₹0 string metric.
+ */
+function damerauLevenshtein(a, b) {
+  if (a === b) return 0;
+  const lenA = a.length;
+  const lenB = b.length;
+  if (lenA === 0) return lenB;
+  if (lenB === 0) return lenA;
+
+  const matrix = [];
+  for (let i = 0; i <= lenA; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= lenB; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= lenA; i++) {
+    for (let j = 1; j <= lenB; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let min = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost
+      );
+
+      if (
+        i > 1 &&
+        j > 1 &&
+        a[i - 1] === b[j - 2] &&
+        a[i - 2] === b[j - 1]
+      ) {
+        min = Math.min(min, matrix[i - 2][j - 2] + 1);
+      }
+
+      matrix[i][j] = min;
+    }
+  }
+
+  return matrix[lenA][lenB];
+}
+
+/**
+ * Returns maximum allowed edit distance based on target word length:
+ * - <= 3 chars: 0 (exact only)
+ * - 4-6 chars: 1
+ * - >= 7 chars: 2
+ */
+function getMaxEditDistance(target) {
+  const len = typeof target === 'string' ? target.length : 0;
+  if (len <= 3) return 0;
+  if (len <= 6) return 1;
+  return 2;
+}
+
+/**
+ * Finds the closest matching dictionary term for a candidate token.
+ */
+function findFuzzyMatch(token, dictionary) {
+  if (!token || typeof token !== 'string') return null;
+  const clean = token.toLowerCase().trim();
+  if (clean.length < 3) return null;
+  if (STOP_WORDS.has(clean) || !isNaN(Number(clean))) return null;
+
+  let bestMatch = null;
+  let bestDistance = Infinity;
+
+  for (const term of dictionary) {
+    const termClean = term.toLowerCase().trim();
+    const maxDist = getMaxEditDistance(termClean);
+    if (maxDist === 0) continue;
+
+    if (Math.abs(clean.length - termClean.length) > maxDist) continue;
+
+    const dist = damerauLevenshtein(clean, termClean);
+    if (dist <= maxDist && dist < bestDistance) {
+      bestDistance = dist;
+      bestMatch = {
+        term: termClean,
+        originalTerm: term,
+        distance: dist,
+        matchedToken: clean
+      };
+      if (dist === 1 && termClean.length <= 6) break;
+    }
+  }
+
+  return bestMatch;
 }
 
 /**
@@ -290,6 +393,8 @@ export function parseQuery(query = '', latitude, longitude) {
   }
 
   let text = ' ' + originalQuery.toLowerCase().trim() + ' ';
+  let tokensRemoved = [];
+  let fuzzyMatchCount = 0;
 
   // 1. Intent
   const isShopSearch = /\b(shops|shop|stores|store|outlets|outlet|dealers|dealer|showrooms|showroom|market|markets|boutique|boutiques)\b/i.test(text);
@@ -300,7 +405,7 @@ export function parseQuery(query = '', latitude, longitude) {
   else if (isBrowse) structuredQuery.intent = 'browse';
   else structuredQuery.intent = 'product_search';
 
-  // 2. Location
+  // 2. Location (Exact + Fuzzy)
   let extractedLocName = null;
   const locPrepMatch = text.match(/\b(?:near|in|around|at|from|to)\s+([a-z]+(?:\s+[a-z]+)?)\b/i);
   if (locPrepMatch) {
@@ -309,15 +414,28 @@ export function parseQuery(query = '', latitude, longitude) {
     if (KNOWN_LOCATIONS[candidateKey] || KNOWN_LOCATIONS[candidate]) {
       extractedLocName = candidate;
       text = text.replace(locPrepMatch[0], ' ');
+      tokensRemoved.push(locPrepMatch[0]);
     } else {
-      const firstWord = candidate.split(/\s+/)[0];
-      if (!CATEGORY_SYNONYMS[firstWord] && !STOP_WORDS.has(firstWord)) {
-        extractedLocName = candidate;
+      const fuzzyLoc = findFuzzyMatch(candidateKey, Object.keys(KNOWN_LOCATIONS)) ||
+        findFuzzyMatch(candidate.split(/\s+/)[0], Object.keys(KNOWN_LOCATIONS));
+
+      if (fuzzyLoc && KNOWN_LOCATIONS[fuzzyLoc.term]) {
+        extractedLocName = fuzzyLoc.term.replace(/_/g, ' ');
+        fuzzyMatchCount++;
         text = text.replace(locPrepMatch[0], ' ');
+        tokensRemoved.push(locPrepMatch[0]);
+      } else {
+        const firstWord = candidate.split(/\s+/)[0];
+        if (!CATEGORY_SYNONYMS[firstWord] && !STOP_WORDS.has(firstWord) && !ATTRIBUTE_VALUES.colors.includes(firstWord)) {
+          extractedLocName = candidate;
+          text = text.replace(locPrepMatch[0], ' ');
+          tokensRemoved.push(locPrepMatch[0]);
+        }
       }
     }
   }
 
+  // Fallback location check
   if (!extractedLocName) {
     for (const locKey of Object.keys(KNOWN_LOCATIONS)) {
       const locDisplay = locKey.replace(/_/g, ' ');
@@ -325,7 +443,23 @@ export function parseQuery(query = '', latitude, longitude) {
       if (locRegex.test(text)) {
         extractedLocName = locDisplay;
         text = text.replace(locRegex, ' ');
+        tokensRemoved.push(locDisplay);
         break;
+      }
+    }
+
+    if (!extractedLocName) {
+      const words = text.replace(/[^a-z\s]/gi, ' ').split(/\s+/).filter((w) => w.length >= 4);
+      for (const w of words) {
+        const fuzzyStandalone = findFuzzyMatch(w, Object.keys(KNOWN_LOCATIONS));
+        if (fuzzyStandalone && KNOWN_LOCATIONS[fuzzyStandalone.term]) {
+          extractedLocName = fuzzyStandalone.term.replace(/_/g, ' ');
+          fuzzyMatchCount++;
+          const wordRegex = new RegExp(`\\b${w}\\b`, 'i');
+          text = text.replace(wordRegex, ' ');
+          tokensRemoved.push(w);
+          break;
+        }
       }
     }
   }
@@ -366,6 +500,7 @@ export function parseQuery(query = '', latitude, longitude) {
     structuredQuery.minPrice = structuredQuery.price.min;
     structuredQuery.maxPrice = structuredQuery.price.max;
     text = text.replace(rangeMatch[0], ' ');
+    tokensRemoved.push(rangeMatch[0]);
   } else {
     const maxPattern = /\b(?:under|below|less than|upto|up to|within|max|maximum of)\s+(?:rs\.?|inr|₹)?\s*(\d+(?:\.\d+)?)\b/i;
     const maxMatch = text.match(maxPattern);
@@ -373,6 +508,7 @@ export function parseQuery(query = '', latitude, longitude) {
       structuredQuery.price.max = parseFloat(maxMatch[1]);
       structuredQuery.maxPrice = structuredQuery.price.max;
       text = text.replace(maxMatch[0], ' ');
+      tokensRemoved.push(maxMatch[0]);
     }
 
     const minPattern = /\b(?:above|over|more than|exceeding|min|minimum of|starting from|greater than)\s+(?:rs\.?|inr|₹)?\s*(\d+(?:\.\d+)?)\b/i;
@@ -381,10 +517,11 @@ export function parseQuery(query = '', latitude, longitude) {
       structuredQuery.price.min = parseFloat(minMatch[1]);
       structuredQuery.minPrice = structuredQuery.price.min;
       text = text.replace(minMatch[0], ' ');
+      tokensRemoved.push(minMatch[0]);
     }
   }
 
-  // 4. Attributes
+  // 4. Attributes (Exact + Fuzzy)
   for (const color of ATTRIBUTE_VALUES.colors) {
     const colorRegex = new RegExp(`\\b${color}\\b`, 'i');
     if (colorRegex.test(text)) {
@@ -393,13 +530,39 @@ export function parseQuery(query = '', latitude, longitude) {
       break;
     }
   }
+  if (!structuredQuery.attributes.color) {
+    const words = text.replace(/[^a-z\s]/gi, ' ').split(/\s+/).filter((w) => w.length >= 3);
+    for (const w of words) {
+      const fuzzyColor = findFuzzyMatch(w, ATTRIBUTE_VALUES.colors);
+      if (fuzzyColor) {
+        structuredQuery.attributes.color = fuzzyColor.term;
+        fuzzyMatchCount++;
+        const wordRegex = new RegExp(`\\b${w}\\b`, 'i');
+        text = text.replace(wordRegex, ' ');
+        break;
+      }
+    }
+  }
 
   for (const style of ATTRIBUTE_VALUES.styles) {
     const styleRegex = new RegExp(`\\b${style}\\b`, 'i');
     if (styleRegex.test(text)) {
-      structuredQuery.attributes.style = style;
+      structuredQuery.attributes.style = (style === 'sporty' || style === 'sport') ? 'sports' : style;
       text = text.replace(styleRegex, ' ');
       break;
+    }
+  }
+  if (!structuredQuery.attributes.style) {
+    const words = text.replace(/[^a-z\s]/gi, ' ').split(/\s+/).filter((w) => w.length >= 4);
+    for (const w of words) {
+      const fuzzyStyle = findFuzzyMatch(w, ATTRIBUTE_VALUES.styles);
+      if (fuzzyStyle) {
+        structuredQuery.attributes.style = (fuzzyStyle.term === 'sporty' || fuzzyStyle.term === 'sport') ? 'sports' : fuzzyStyle.term;
+        fuzzyMatchCount++;
+        const wordRegex = new RegExp(`\\b${w}\\b`, 'i');
+        text = text.replace(wordRegex, ' ');
+        break;
+      }
     }
   }
 
@@ -409,6 +572,19 @@ export function parseQuery(query = '', latitude, longitude) {
       structuredQuery.attributes.material = mat;
       text = text.replace(matRegex, ' ');
       break;
+    }
+  }
+  if (!structuredQuery.attributes.material) {
+    const words = text.replace(/[^a-z\s]/gi, ' ').split(/\s+/).filter((w) => w.length >= 4);
+    for (const w of words) {
+      const fuzzyMat = findFuzzyMatch(w, ATTRIBUTE_VALUES.materials);
+      if (fuzzyMat) {
+        structuredQuery.attributes.material = fuzzyMat.term;
+        fuzzyMatchCount++;
+        const wordRegex = new RegExp(`\\b${w}\\b`, 'i');
+        text = text.replace(wordRegex, ' ');
+        break;
+      }
     }
   }
 
@@ -424,7 +600,7 @@ export function parseQuery(query = '', latitude, longitude) {
     }
   }
 
-  // 5. Category
+  // 5. Category (Exact + Fuzzy)
   const sortedSynonyms = Object.keys(CATEGORY_SYNONYMS).sort((a, b) => b.length - a.length);
   for (const syn of sortedSynonyms) {
     const synRegex = new RegExp(`\\b${syn}\\b`, 'i');
@@ -432,6 +608,20 @@ export function parseQuery(query = '', latitude, longitude) {
       structuredQuery.category = CATEGORY_SYNONYMS[syn];
       text = text.replace(synRegex, ' ');
       break;
+    }
+  }
+
+  if (!structuredQuery.category) {
+    const words = text.replace(/[^a-z\s]/gi, ' ').split(/\s+/).filter((w) => w.length >= 4);
+    for (const w of words) {
+      const fuzzySyn = findFuzzyMatch(w, sortedSynonyms);
+      if (fuzzySyn && CATEGORY_SYNONYMS[fuzzySyn.term]) {
+        structuredQuery.category = CATEGORY_SYNONYMS[fuzzySyn.term];
+        fuzzyMatchCount++;
+        const wordRegex = new RegExp(`\\b${w}\\b`, 'i');
+        text = text.replace(wordRegex, ' ');
+        break;
+      }
     }
   }
 
@@ -464,10 +654,27 @@ export function parseQuery(query = '', latitude, longitude) {
   let score = 0.30;
   if (structuredQuery.category) score += 0.25;
   if (structuredQuery.price.min !== null || structuredQuery.price.max !== null) score += 0.15;
-  if (structuredQuery.location) score += 0.15;
-  if (structuredQuery.attributes.color || structuredQuery.attributes.style || structuredQuery.attributes.material || structuredQuery.attributes.size) score += 0.15;
+  if (structuredQuery.location) {
+    score += 0.15;
+    if (structuredQuery.location.latitude !== null && structuredQuery.location.longitude !== null) {
+      score += 0.05;
+    }
+  }
+  let attributeCount = 0;
+  if (structuredQuery.attributes.color) attributeCount++;
+  if (structuredQuery.attributes.style) attributeCount++;
+  if (structuredQuery.attributes.material) attributeCount++;
+  if (structuredQuery.attributes.size) attributeCount++;
+  score += Math.min(0.20, attributeCount * 0.10);
   if (structuredQuery.keywords.length > 0) score += 0.05;
-  structuredQuery.confidence = Math.min(0.98, Math.round(score * 100) / 100);
+
+  let finalConfidence = Math.min(0.98, Math.max(0.1, Math.round(score * 100) / 100));
+
+  if (fuzzyMatchCount > 0) {
+    finalConfidence = Math.max(0.10, Math.round((finalConfidence - Math.min(0.15, fuzzyMatchCount * 0.05)) * 100) / 100);
+  }
+
+  structuredQuery.confidence = finalConfidence;
 
   return structuredQuery;
 }
@@ -478,6 +685,7 @@ export function parseQuery(query = '', latitude, longitude) {
  * @param {object} structuredQuery - Parsed structured parameters
  * @returns {Array} List of matching products
  */
+
 export function filterProductsByStructuredQuery(structuredQuery = {}) {
   const allProducts = getAllMergedProducts();
   if (!allProducts || allProducts.length === 0) {
