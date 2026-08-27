@@ -298,4 +298,79 @@ describe('Query Parser — GETSY 2.0 Deterministic NLP', () => {
     });
   });
 
+  describe('10. Typo Tolerance & Fuzzy NLP Matching', () => {
+    it('A. should correctly parse multi-typo target query: "black forml shooes under 2000 near Sangamnr"', () => {
+      const result = parseQuery('black forml shooes under 2000 near Sangamnr');
+
+      expect(result.intent).toBe('product_search');
+      expect(result.category).toBe('footwear');
+      expect(result.attributes.color).toBe('black');
+      expect(result.attributes.style).toBe('formal');
+      expect(result.price.max).toBe(2000);
+      expect(result.location).not.toBeNull();
+      expect(result.location.name).toBe('sangamner');
+      expect(result.location.latitude).toBe(19.57);
+      expect(result.location.longitude).toBe(74.21);
+      expect(result.confidence).toBeGreaterThanOrEqual(0.70);
+    });
+
+    it('B. should correctly parse "wite snakers" -> color: white, category: footwear', () => {
+      const result = parseQuery('wite snakers');
+
+      expect(result.category).toBe('footwear');
+      expect(result.attributes.color).toBe('white');
+    });
+
+    it('C. should correctly parse "lether walet" -> material: leather, category: accessories', () => {
+      const result = parseQuery('lether walet');
+
+      expect(result.category).toBe('accessories');
+      expect(result.attributes.material).toBe('leather');
+    });
+
+    it('D. should correctly parse "lethr belt" -> material: leather, category: accessories', () => {
+      const result = parseQuery('lethr belt');
+
+      expect(result.category).toBe('accessories');
+      expect(result.attributes.material).toBe('leather');
+    });
+
+    it('E. should resolve transposed location typo: "shops in snagamner"', () => {
+      const result = parseQuery('shops in snagamner');
+
+      expect(result.intent).toBe('shop_search');
+      expect(result.location).not.toBeNull();
+      expect(result.location.name).toBe('sangamner');
+      expect(result.location.latitude).toBe(19.57);
+      expect(result.location.longitude).toBe(74.21);
+    });
+
+    it('F. should resolve category typo "chappls" -> footwear and "jeens" -> clothing', () => {
+      expect(parseQuery('chappls').category).toBe('footwear');
+      expect(parseQuery('blue jeens').category).toBe('clothing');
+      expect(parseQuery('blue jeens').attributes.color).toBe('blue');
+    });
+
+    it('G. should avoid false positive fuzzy matching on unrelated or short words', () => {
+      const result = parseQuery('cat bed');
+      // "cat" and "bed" are length <= 3, must not match red/bat/etc.
+      expect(result.attributes.color).toBeNull();
+
+      const nonCategory = parseQuery('xyz123 randomthing');
+      expect(nonCategory.category).toBeNull();
+      expect(nonCategory.location).toBeNull();
+    });
+
+    it('H. should preserve exact match priority when spelling is already correct', () => {
+      const exact = parseQuery('black formal shoes under 2000 near Sangamner');
+      const typo = parseQuery('black forml shooes under 2000 near Sangamnr');
+
+      expect(exact.category).toBe(typo.category);
+      expect(exact.attributes.style).toBe(typo.attributes.style);
+      expect(exact.location.name).toBe(typo.location.name);
+      // Exact confidence should be higher than typo confidence
+      expect(exact.confidence).toBeGreaterThan(typo.confidence);
+    });
+  });
+
 });
