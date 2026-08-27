@@ -1,6 +1,10 @@
 /**
  * GETSY 2.0 — Product Catalog Data
  * Aligned with backend Product model, API contract, and design references.
+ *
+ * CATEGORY NORMALIZATION: All product categories use canonical IDs from
+ * ai/src/data/categories.js. Former 'ornaments' → 'accessories',
+ * 'hardware' → 'home', 'furniture' → 'home'.
  */
 
 export const products = [
@@ -23,6 +27,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10'],
     description: 'Handcrafted premium leather formal shoes designed for all-day comfort and long-lasting durability. Features a padded insole, genuine full-grain leather upper, and anti-skid rubber sole.',
+    attributes: { color: 'brown', style: 'formal', material: 'leather', size: null },
     rating: 4.8,
     reviewsCount: 34,
     reviews: [
@@ -45,8 +50,8 @@ export const products = [
   {
     id: 'prod-2',
     name: 'Temple Design Necklace',
-    category: 'ornaments',
-    categoryLabel: 'Ornaments',
+    category: 'accessories',
+    categoryLabel: 'Accessories',
     price: 48500,
     originalPrice: 52000,
     stock: 1,
@@ -61,6 +66,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['Standard', 'Large'],
     description: 'A handcrafted temple design necklace featuring intricate traditional motifs, layered chains and a centered gemstone pendant. Made by skilled local artisans at Om Jewellers, this piece blends heritage craftsmanship with a refined contemporary finish — perfect for festive occasions and timeless everyday elegance.',
+    attributes: { color: 'gold', style: 'traditional', material: 'gold', size: null },
     rating: 4.9,
     reviewsCount: 19,
     reviews: [
@@ -83,8 +89,8 @@ export const products = [
   {
     id: 'prod-3',
     name: 'Oxidised Anklets',
-    category: 'ornaments',
-    categoryLabel: 'Ornaments',
+    category: 'accessories',
+    categoryLabel: 'Accessories',
     price: 899,
     originalPrice: 1199,
     stock: 15,
@@ -99,6 +105,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['Free Size', 'Adjustable'],
     description: 'Traditional handcrafted 92.5 oxidised silver-finish anklets with subtle chime bells and ethnic detailing. Lightweight and skin-friendly coating.',
+    attributes: { color: 'silver', style: 'ethnic', material: 'silver', size: null },
     rating: 4.6,
     reviewsCount: 28,
     reviews: [
@@ -130,6 +137,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['UK 7', 'UK 8', 'UK 9', 'UK 10'],
     description: 'High-performance athletic running shoes engineered with breathable mesh fabric, lightweight EVA cushioning, and shock absorption for daily jogs and sports.',
+    attributes: { color: null, style: 'sports', material: null, size: null },
     rating: 4.8,
     reviewsCount: 42,
     reviews: [
@@ -161,6 +169,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['UK 7', 'UK 8', 'UK 9', 'UK 10'],
     description: 'Iconic red and white high-top lifestyle sneakers. Combines bold streetwear fashion with padded ankle collars and durable stitch construction.',
+    attributes: { color: 'red', style: 'casual', material: null, size: null },
     rating: 4.7,
     reviewsCount: 51,
     reviews: [
@@ -176,8 +185,8 @@ export const products = [
   {
     id: 'prod-6',
     name: 'Kundan Gold-Plated Earrings',
-    category: 'ornaments',
-    categoryLabel: 'Ornaments',
+    category: 'accessories',
+    categoryLabel: 'Accessories',
     price: 349,
     originalPrice: 599,
     stock: 2,
@@ -192,6 +201,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['Standard Drop'],
     description: 'Intricate ethnic Kundan drop earrings plated with 24k gold finish and embellished with faux pearls and enamel work.',
+    attributes: { color: 'gold', style: 'ethnic', material: 'gold', size: null },
     rating: 4.7,
     reviewsCount: 16,
     reviews: [
@@ -223,6 +233,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['S', 'M', 'L', 'XL', 'XXL'],
     description: '100% breathable organic cotton shirt with structured collar and tailored slim fit. Perfect for smart casual office and weekend wear.',
+    attributes: { color: null, style: 'casual', material: 'cotton', size: null },
     rating: 4.6,
     reviewsCount: 39,
     reviews: [
@@ -238,8 +249,8 @@ export const products = [
   {
     id: 'prod-8',
     name: 'Solid Teak Lounge Chair',
-    category: 'furniture',
-    categoryLabel: 'Furniture',
+    category: 'home',
+    categoryLabel: 'Home',
     price: 6499,
     originalPrice: 8500,
     stock: 4,
@@ -254,6 +265,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['Standard Armchair'],
     description: 'Handcrafted solid teakwood armchair with ergonomic curved backrest and water-repellent cushioned seating.',
+    attributes: { color: null, style: null, material: 'wood', size: null },
     rating: 4.8,
     reviewsCount: 14,
     reviews: [
@@ -285,6 +297,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['1 kg pack', '2 kg pack'],
     description: 'Crisp, sweet mountain-grown apples sourced directly from local orchard farms. Chemical-free and rich in fiber.',
+    attributes: { color: null, style: null, material: null, size: null },
     rating: 4.9,
     reviewsCount: 88,
     reviews: [
@@ -316,6 +329,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['Matte Black', 'Silver Grey'],
     description: 'Active noise cancelling Bluetooth 5.3 over-ear headphones with 40-hour battery life, fast USB-C charging, and deep bass sound drivers.',
+    attributes: { color: 'black', style: null, material: null, size: null },
     rating: 4.7,
     reviewsCount: 63,
     reviews: [
@@ -331,8 +345,8 @@ export const products = [
   {
     id: 'prod-11',
     name: 'Precision Heavy-Duty Cordless Drill',
-    category: 'hardware',
-    categoryLabel: 'Hardware',
+    category: 'home',
+    categoryLabel: 'Home',
     price: 2899,
     originalPrice: 3600,
     stock: 6,
@@ -347,6 +361,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['12V Kit', '18V Pro Kit'],
     description: 'High-torque cordless power drill with 2-speed gearbox, 20 torque settings, LED work light, and rechargeable lithium-ion battery pack.',
+    attributes: { color: null, style: null, material: 'metal', size: null },
     rating: 4.8,
     reviewsCount: 22,
     reviews: [
@@ -378,6 +393,7 @@ export const products = [
     inStorePickup: true,
     availableSizes: ['Tan Brown', 'Dark Walnut'],
     description: 'Slim RFID-protected genuine leather bifold wallet with 8 card slots, currency divider, and coin pocket.',
+    attributes: { color: 'brown', style: 'classic', material: 'leather', size: null },
     rating: 4.6,
     reviewsCount: 31,
     reviews: [
@@ -396,11 +412,18 @@ export function getProductById(id) {
   return products.find((p) => p.id === id || String(p.id) === String(id)) || null;
 }
 
+const LEGACY_CATEGORY_ALIASES = {
+  ornaments: 'accessories',
+  hardware: 'home',
+  furniture: 'home'
+};
+
 export function filterProducts({ category, search, shopId, minPrice, maxPrice, sortBy }) {
   let list = [...products];
 
   if (category && category !== 'all') {
-    const norm = category.toLowerCase().trim();
+    const raw = category.toLowerCase().trim();
+    const norm = LEGACY_CATEGORY_ALIASES[raw] || raw;
     list = list.filter((p) => p.category.toLowerCase() === norm);
   }
 

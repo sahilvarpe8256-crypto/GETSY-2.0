@@ -14,7 +14,7 @@ function formatCategory(cat) {
     hardware: 'Hardware',
     electronics: 'Electronics',
     groceries: 'Groceries',
-    grocery: 'Groceries',
+    grocery: 'Grocery',
     beauty: 'Beauty',
     sports: 'Sports',
     books: 'Books',
