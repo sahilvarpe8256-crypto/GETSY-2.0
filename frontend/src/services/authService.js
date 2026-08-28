@@ -40,6 +40,39 @@ export function clearAuthSession() {
 }
 
 /**
+ * Validate and fetch current authenticated user profile from backend
+ */
+export async function fetchCurrentUser(token) {
+  if (!token) return null;
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.user) {
+        saveAuthSession(data.user, token);
+        return data.user;
+      }
+    }
+
+    if (res.status === 401 || res.status === 403) {
+      clearAuthSession();
+      return null;
+    }
+  } catch {
+    // Network offline: retain existing stored session
+  }
+
+  return getStoredUser();
+}
+
+/**
  * Login user
  */
 export async function loginUser({ email, password, role = 'customer' }) {
@@ -47,23 +80,17 @@ export async function loginUser({ email, password, role = 'customer' }) {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password, role })
     });
 
     const data = await res.json();
     if (res.ok && data.user) {
-      if (data.user.role === 'owner' && !data.user.shopId) {
-        data.user.shopId = 'shop-1';
-        data.user.shopName = 'Kothrud Shoes & Boots';
-      }
       saveAuthSession(data.user, data.token);
       return { success: true, user: data.user, token: data.token };
     }
-    if (data.error) {
-      return { success: false, error: data.error };
-    }
+    return { success: false, error: data.error || 'Invalid credentials. Please try again.' };
   } catch {
-    // Graceful fallback simulation
+    // Graceful fallback simulation only if backend is unreachable
     const isOwner = role === 'owner' || email.toLowerCase().includes('owner');
     const mockUser = {
       id: isOwner ? 'usr-demo-owner' : 'usr-demo-customer',
@@ -77,8 +104,6 @@ export async function loginUser({ email, password, role = 'customer' }) {
     saveAuthSession(mockUser, mockToken);
     return { success: true, user: mockUser, token: mockToken, isMock: true };
   }
-
-  return { success: false, error: 'Invalid credentials. Please try again.' };
 }
 
 /**
@@ -101,18 +126,12 @@ export async function registerUser({
 
     const data = await res.json();
     if (res.ok && data.user) {
-      if (data.user.role === 'owner' && !data.user.shopId) {
-        data.user.shopId = 'shop-1';
-        data.user.shopName = 'Kothrud Shoes & Boots';
-      }
       saveAuthSession(data.user, data.token);
       return { success: true, user: data.user, token: data.token };
     }
-    if (data.error) {
-      return { success: false, error: data.error };
-    }
+    return { success: false, error: data.error || 'Registration failed. Please try again.' };
   } catch {
-    // Fallback simulation
+    // Fallback simulation only if backend is unreachable
     const isOwner = role === 'owner';
     const uniqueShopId = isOwner ? `shop-${Date.now().toString().slice(-6)}` : null;
 
@@ -161,6 +180,6 @@ export async function registerUser({
     saveAuthSession(mockUser, mockToken);
     return { success: true, user: mockUser, token: mockToken, isMock: true };
   }
-
-  return { success: false, error: 'Registration failed. Please try again.' };
 }
+
+export { API_BASE_URL };

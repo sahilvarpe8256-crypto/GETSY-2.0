@@ -26,6 +26,14 @@ const createProductValidationRules = [
     .optional()
     .isInt({ min: 0 })
     .withMessage('Stock must be an integer greater than or equal to 0'),
+  body('quantity')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Quantity must be an integer greater than or equal to 0'),
+  body('sizes')
+    .optional(),
+  body('size')
+    .optional(),
   body('available')
     .optional()
     .isBoolean()
@@ -61,6 +69,14 @@ const updateProductValidationRules = [
     .optional()
     .isInt({ min: 0 })
     .withMessage('Stock must be an integer greater than or equal to 0'),
+  body('quantity')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Quantity must be an integer greater than or equal to 0'),
+  body('sizes')
+    .optional(),
+  body('size')
+    .optional(),
   body('available')
     .optional()
     .isBoolean()

@@ -41,6 +41,15 @@ const productSchema = new mongoose.Schema(
         message: 'Stock must be an integer'
       }
     },
+    sizes: {
+      type: [String],
+      default: []
+    },
+    size: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     available: {
       type: Boolean,
       default: true
@@ -53,6 +62,10 @@ const productSchema = new mongoose.Schema(
 
 // Helper method to format public product JSON (maps _id to id)
 productSchema.methods.toPublicJSON = function () {
+  const rawSizes = Array.isArray(this.sizes) && this.sizes.length > 0
+    ? this.sizes
+    : (this.size ? this.size.split(',').map((s) => s.trim()).filter(Boolean) : []);
+
   return {
     id: this._id.toString(),
     shopId: this.shopId ? (this.shopId._id ? this.shopId._id.toString() : this.shopId.toString()) : undefined,
@@ -61,8 +74,12 @@ productSchema.methods.toPublicJSON = function () {
     description: this.description,
     price: this.price,
     image: this.image,
-    stock: this.stock,
-    available: this.available,
+    stock: this.stock !== undefined ? this.stock : 0,
+    quantity: this.stock !== undefined ? this.stock : 0,
+    sizes: rawSizes,
+    size: this.size || (rawSizes.length > 0 ? rawSizes.join(', ') : ''),
+    availableSizes: rawSizes,
+    available: this.available !== undefined ? this.available : (this.stock > 0),
     createdAt: this.createdAt,
     updatedAt: this.updatedAt
   };

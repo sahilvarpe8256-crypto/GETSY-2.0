@@ -12,13 +12,15 @@ import {
   Check,
   AlertCircle,
   PackageCheck,
-  Store
+  Store,
+  X
 } from 'lucide-react';
 import { getProductById, getProducts } from '../../services/productService';
 import { useWishlist } from '../../context/WishlistContext';
 import { useLocation } from '../../context/LocationContext';
 import ProductReviews from '../../components/product/ProductReviews';
 import ProductCard from '../../components/product/ProductCard';
+import ShareModal from '../../components/common/ShareModal';
 import './Product.css';
 
 export default function Product() {
@@ -31,9 +33,28 @@ export default function Product() {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSize, setSelectedSize] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [directionsNotice, setDirectionsNotice] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+
+  // Esc key listener to close image lightbox
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsLightboxOpen(false);
+      }
+    };
+    if (isLightboxOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isLightboxOpen]);
 
   useEffect(() => {
     let isMounted = true;
@@ -43,8 +64,9 @@ export default function Product() {
     getProductById(id).then((found) => {
       if (!isMounted) return;
       setProduct(found);
-      if (found && found.availableSizes && found.availableSizes.length > 0) {
-        setSelectedSize(found.availableSizes[0]);
+      const rawSizes = found?.availableSizes || found?.sizes || (found?.size ? found.size.split(',').map((s) => s.trim()).filter(Boolean) : []);
+      if (rawSizes && rawSizes.length > 0) {
+        setSelectedSize(rawSizes[0]);
       }
 
       if (found) {
@@ -73,11 +95,24 @@ export default function Product() {
     }
   };
 
-  const handleShare = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleShare = async () => {
+    const shareData = {
+      title: product?.name || 'GETSY Product',
+      text: `Check out ${product?.name || 'this item'} on GETSY!`,
+      url: window.location.href
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setIsShareOpen(true);
+        }
+      }
+    } else {
+      setIsShareOpen(true);
     }
   };
 
@@ -154,7 +189,13 @@ export default function Product() {
         <div className="product-detail-layout">
           {/* Left Column: Product Visual */}
           <div className="product-media-column">
-            <div className="product-image-container">
+            <div
+              className="product-image-container"
+              onClick={() => !imgError && product.image && setIsLightboxOpen(true)}
+              style={{ cursor: !imgError && product.image ? 'zoom-in' : 'default' }}
+              title={!imgError && product.image ? 'Click to inspect / zoom full image' : ''}
+              id="product-main-image-container"
+            >
               {!imgError && product.image ? (
                 <img
                   src={product.image}
@@ -178,11 +219,15 @@ export default function Product() {
               <button
                 type="button"
                 className="product-image-share-btn"
-                onClick={handleShare}
-                title={copied ? 'Link copied!' : 'Share product'}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleShare();
+                }}
+                title="Share product"
                 aria-label="Share product"
+                id="product-share-btn"
               >
-                {copied ? <Check size={16} color="#16a34a" /> : <Share2 size={16} />}
+                <Share2 size={16} />
               </button>
             </div>
           </div>
@@ -223,35 +268,71 @@ export default function Product() {
                 )}
               </div>
 
-              <span
-                className={`product-stock-pill ${
-                  product.stockStatus && product.stockStatus.toLowerCase().includes('low')
-                    ? 'product-stock-pill--low'
-                    : 'product-stock-pill--in'
-                }`}
-              >
-                {product.stockStatus || 'In Stock'}
-              </span>
+              {(() => {
+                const stockQty = product.stock !== undefined ? product.stock : (product.quantity !== undefined ? product.quantity : 0);
+                const isOutOfStock = stockQty <= 0 || product.available === false;
+                const isLowStock = !isOutOfStock && stockQty <= 5;
+                const stockClass = isOutOfStock
+                  ? 'product-stock-pill--out'
+                  : isLowStock
+                  ? 'product-stock-pill--low'
+                  : 'product-stock-pill--in';
+                const stockText = isOutOfStock
+                  ? 'Out of Stock'
+                  : isLowStock
+                  ? `Low Stock (${stockQty} ${stockQty === 1 ? 'unit' : 'units'} left)`
+                  : `${stockQty} ${stockQty === 1 ? 'unit' : 'units'} available`;
+
+                return (
+                  <span className={`product-stock-pill ${stockClass}`} id="product-availability-pill">
+                    {stockText}
+                  </span>
+                );
+              })()}
             </div>
 
-            {/* Size / Variant Selector if available */}
-            {product.availableSizes && product.availableSizes.length > 0 && (
-              <div className="product-size-section">
-                <label className="product-section-label">SELECT SIZE</label>
-                <div className="product-size-pills">
-                  {product.availableSizes.map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      className={`size-pill ${selectedSize === size ? 'size-pill--active' : ''}`}
-                      onClick={() => setSelectedSize(size)}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Size / Variant Section */}
+            {(() => {
+              const rawSizes = Array.isArray(product.availableSizes) && product.availableSizes.length > 0
+                ? product.availableSizes
+                : (Array.isArray(product.sizes) && product.sizes.length > 0
+                    ? product.sizes
+                    : (product.size ? String(product.size).split(',').map((s) => s.trim()).filter(Boolean) : []));
+
+              if (rawSizes.length > 1) {
+                return (
+                  <div className="product-size-section">
+                    <label className="product-section-label">SELECT SIZE</label>
+                    <div className="product-size-pills">
+                      {rawSizes.map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          className={`size-pill ${selectedSize === size ? 'size-pill--active' : ''}`}
+                          onClick={() => setSelectedSize(size)}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              if (rawSizes.length === 1 || product.size) {
+                const singleSize = rawSizes[0] || product.size;
+                return (
+                  <div className="product-size-section">
+                    <label className="product-section-label">SIZE / VARIANT</label>
+                    <div className="product-single-size-tag">
+                      <span>{singleSize}</span>
+                    </div>
+                  </div>
+                );
+              }
+
+              return null;
+            })()}
 
             {/* Action Buttons: Wishlist & Directions */}
             <div className="product-actions-group">
@@ -322,9 +403,10 @@ export default function Product() {
 
         {/* Customer Reviews Section */}
         <ProductReviews
-          reviews={product.reviews || []}
-          rating={product.rating || 4.8}
-          reviewsCount={product.reviewsCount || 0}
+          productId={product.id || product._id}
+          shopId={product.shopId}
+          title="Customer Reviews"
+          entityName="Product"
         />
 
         {/* Related Products Carousel / Grid */}
@@ -339,6 +421,60 @@ export default function Product() {
           </section>
         )}
       </div>
+
+      {/* Fullscreen Image Lightbox */}
+      {isLightboxOpen && (
+        <div
+          className="product-lightbox-overlay"
+          onClick={() => setIsLightboxOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Product Image Fullscreen Preview"
+          id="product-lightbox-overlay"
+        >
+          <div
+            className="product-lightbox-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="product-lightbox-close-btn"
+              onClick={() => setIsLightboxOpen(false)}
+              aria-label="Close fullscreen preview"
+              id="lightbox-close-btn"
+            >
+              <X size={22} />
+            </button>
+            <div
+              className={`product-lightbox-image-wrap ${isZoomed ? 'zoomed' : ''}`}
+              onClick={() => setIsZoomed((prev) => !prev)}
+              title={isZoomed ? 'Click to zoom out' : 'Click to zoom in'}
+            >
+              <img
+                src={product.image}
+                alt={product.name}
+                className="product-lightbox-image"
+              />
+            </div>
+            <div className="product-lightbox-caption">
+              <span>{product.name}</span>
+              <span className="lightbox-hint">
+                {isZoomed ? 'Click image to zoom out • Press Esc or click outside to close' : 'Click image to zoom in • Press Esc or click outside to close'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal Dialog */}
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        title={product?.name || 'Product Details'}
+        text={`Check out ${product?.name || 'this product'} on GETSY!`}
+        url={window.location.href}
+        entityType="product"
+      />
     </main>
   );
 }

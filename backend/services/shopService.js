@@ -1,4 +1,7 @@
 const Shop = require('../models/Shop');
+const Product = require('../models/Product');
+const Review = require('../models/Review');
+const User = require('../models/User');
 
 /**
  * Helper to parse input location data into standard GeoJSON Point format
@@ -121,13 +124,20 @@ const updateShop = async ({ shopId, userId, userRole, updateData }) => {
   }
 
   // Permitted updatable fields
-  if (updateData.shopName !== undefined) shop.shopName = updateData.shopName.trim();
-  if (updateData.shopType !== undefined) shop.shopType = updateData.shopType.trim();
-  if (updateData.description !== undefined) shop.description = updateData.description.trim();
-  if (updateData.phone !== undefined) shop.phone = updateData.phone.trim();
-  if (updateData.image !== undefined) shop.image = updateData.image.trim();
-  if (updateData.address !== undefined) shop.address = updateData.address.trim();
-  if (updateData.area !== undefined) shop.area = updateData.area.trim();
+  if (updateData.shopName !== undefined) shop.shopName = String(updateData.shopName).trim();
+  else if (updateData.name !== undefined) shop.shopName = String(updateData.name).trim();
+
+  if (updateData.shopType !== undefined) shop.shopType = String(updateData.shopType).trim();
+  else if (updateData.category !== undefined) shop.shopType = String(updateData.category).trim();
+
+  if (updateData.description !== undefined) shop.description = String(updateData.description).trim();
+  if (updateData.phone !== undefined) shop.phone = String(updateData.phone).trim();
+  if (updateData.image !== undefined) shop.image = updateData.image ? String(updateData.image).trim() : '';
+  else if (updateData.shopImage !== undefined) shop.image = updateData.shopImage ? String(updateData.shopImage).trim() : '';
+  else if (updateData.photo !== undefined) shop.image = updateData.photo ? String(updateData.photo).trim() : '';
+
+  if (updateData.address !== undefined) shop.address = String(updateData.address).trim();
+  if (updateData.area !== undefined) shop.area = String(updateData.area).trim();
 
   // Handle location update if present
   const updatedLocation = parseGeoJSONLocation(updateData);
@@ -139,10 +149,60 @@ const updateShop = async ({ shopId, userId, userRole, updateData }) => {
   return shop.toPublicJSON();
 };
 
+/**
+ * Delete a shop with complete database cascade (products, reviews, shop)
+ */
+const deleteShop = async ({ shopId, userId, userRole }) => {
+  const shop = await Shop.findById(shopId);
+  if (!shop) {
+    const error = new Error('Shop not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Authorization check: User must be the owner of the shop or an admin
+  const isOwner = shop.ownerId.toString() === userId.toString();
+  const isAdmin = userRole === 'admin';
+
+  if (!isOwner && !isAdmin) {
+    const error = new Error('Access denied. You do not own this shop.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  // 1. Find all products of this shop to cascade-delete their reviews
+  const products = await Product.find({ shopId });
+  const productIds = products.map((p) => p._id);
+
+  if (productIds.length > 0) {
+    await Review.deleteMany({ productId: { $in: productIds } });
+  }
+
+  // 2. Delete shop-level reviews
+  await Review.deleteMany({ shopId });
+
+  // 3. Delete products belonging to this shop & pull them from all wishlists
+  const productStringIds = productIds.map((p) => p.toString());
+  if (productStringIds.length > 0) {
+    const Wishlist = require('../models/Wishlist');
+    await Wishlist.updateMany(
+      { products: { $in: productStringIds } },
+      { $pull: { products: { $in: productStringIds } } }
+    );
+  }
+  await Product.deleteMany({ shopId });
+
+  // 4. Delete the Shop document
+  await Shop.findByIdAndDelete(shopId);
+
+  return { message: 'Shop and associated catalog data deleted successfully', id: shopId };
+};
+
 module.exports = {
   createShop,
   getAllShops,
   getShopById,
   getNearbyShops,
-  updateShop
+  updateShop,
+  deleteShop
 };

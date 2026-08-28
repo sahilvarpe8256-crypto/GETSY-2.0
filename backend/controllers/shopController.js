@@ -79,10 +79,29 @@ const updateShop = async (req, res, next) => {
   }
 };
 
+/**
+ * @route   DELETE /api/shops/:id
+ * @desc    Delete shop and cascade associated products and reviews
+ * @access  Private (Shop owner / Admin required)
+ */
+const deleteShop = async (req, res, next) => {
+  try {
+    const result = await shopService.deleteShop({
+      shopId: req.params.id,
+      userId: req.user._id,
+      userRole: req.user.role
+    });
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getShops,
   getNearbyShops,
   getShop,
   createShop,
-  updateShop
+  updateShop,
+  deleteShop
 };

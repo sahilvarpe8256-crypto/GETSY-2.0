@@ -8,11 +8,28 @@ import CategoryPill from '../../components/common/CategoryPill';
 import ProductGrid from '../../components/product/ProductGrid';
 import './Categories.css';
 
+const LEGACY_CATEGORY_ALIASES = {
+  'home & living': 'home',
+  'home-living': 'home',
+  'home_living': 'home',
+  'furniture': 'home',
+  'jewellery': 'ornaments',
+  'jewelry': 'ornaments',
+  'tools': 'hardware'
+};
+
+function normalizeCategoryParam(cat) {
+  if (!cat) return 'all';
+  const lower = cat.toLowerCase().trim();
+  return LEGACY_CATEGORY_ALIASES[lower] || lower;
+}
+
 export default function Categories() {
   const { location } = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   
-  const categoryParam = searchParams.get('cat') || 'all';
+  const rawCategoryParam = searchParams.get('cat') || 'all';
+  const categoryParam = normalizeCategoryParam(rawCategoryParam);
   const [activeCategory, setActiveCategory] = useState(categoryParam);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);

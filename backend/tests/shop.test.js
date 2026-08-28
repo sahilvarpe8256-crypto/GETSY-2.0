@@ -5,6 +5,10 @@ const app = require('../app');
 const User = require('../models/User');
 const Shop = require('../models/Shop');
 
+const Product = require('../models/Product');
+const Review = require('../models/Review');
+const generateToken = require('../utils/generateToken');
+
 let mongoServer;
 
 jest.setTimeout(120000);
@@ -25,6 +29,8 @@ afterAll(async () => {
 beforeEach(async () => {
   await User.deleteMany({});
   await Shop.deleteMany({});
+  await Product.deleteMany({});
+  await Review.deleteMany({});
 });
 
 describe('Phase 3 Shop Foundation APIs', () => {
@@ -74,17 +80,16 @@ describe('Phase 3 Shop Foundation APIs', () => {
     customerToken = customerRes.body.token;
     customerUser = customerRes.body.user;
 
-    // Create Admin
-    const adminRes = await request(app)
-      .post('/api/auth/register')
-      .send({
-        name: 'Admin One',
-        email: 'admin@example.com',
-        password: 'password123',
-        role: 'admin'
-      });
-    adminToken = adminRes.body.token;
-    adminUser = adminRes.body.user;
+    // Create Admin directly in database
+    const adminDoc = new User({
+      name: 'Admin One',
+      email: 'admin@example.com',
+      passwordHash: 'password123',
+      role: 'admin'
+    });
+    await adminDoc.save();
+    adminToken = generateToken(adminDoc._id, 'admin');
+    adminUser = adminDoc.toPublicJSON();
   });
 
   describe('POST /api/shops (Shop Creation)', () => {
@@ -468,6 +473,126 @@ describe('Phase 3 Shop Foundation APIs', () => {
 
       expect(res.statusCode).toBe(400);
       expect(res.body).toHaveProperty('error');
+    });
+  });
+
+  describe('DELETE /api/shops/:id (Shop Deletion & Cascade)', () => {
+    let shopId;
+    let productId;
+
+    beforeEach(async () => {
+      // Create shop for owner 1
+      const shopRes = await request(app)
+        .post('/api/shops')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          shopName: 'Shop To Delete',
+          shopType: 'footwear',
+          address: 'Station Road',
+          area: 'Central',
+          latitude: 18.52,
+          longitude: 73.85
+        });
+      shopId = shopRes.body.id;
+
+      // Create product for this shop
+      const prodRes = await request(app)
+        .post('/api/products')
+        .set('Authorization', `Bearer ${ownerToken}`)
+        .send({
+          shopId,
+          name: 'Product In Shop',
+          category: 'footwear',
+          price: 500,
+          stock: 10
+        });
+      productId = prodRes.body.id;
+
+      // Create shop review and product review
+      await request(app)
+        .post('/api/reviews')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          shopId,
+          rating: 5,
+          comment: 'Great shop review'
+        });
+
+      await request(app)
+        .post('/api/reviews')
+        .set('Authorization', `Bearer ${customerToken}`)
+        .send({
+          productId,
+          shopId,
+          rating: 4,
+          comment: 'Good product review'
+        });
+    });
+
+    it('should reject unauthenticated deletion with 401', async () => {
+      const res = await request(app)
+        .delete(`/api/shops/${shopId}`);
+
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('should reject non-owner customer from deleting shop with 403', async () => {
+      const res = await request(app)
+        .delete(`/api/shops/${shopId}`)
+        .set('Authorization', `Bearer ${customerToken}`);
+
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('should reject another owner from deleting this shop with 403', async () => {
+      const res = await request(app)
+        .delete(`/api/shops/${shopId}`)
+        .set('Authorization', `Bearer ${owner2Token}`);
+
+      expect(res.statusCode).toBe(403);
+      expect(res.body.error).toMatch(/Access denied/i);
+    });
+
+    it('should allow owner to delete own shop and cascade delete products and reviews', async () => {
+      const res = await request(app)
+        .delete(`/api/shops/${shopId}`)
+        .set('Authorization', `Bearer ${ownerToken}`);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toHaveProperty('message');
+
+      // Verify shop is deleted in DB
+      const dbShop = await Shop.findById(shopId);
+      expect(dbShop).toBeNull();
+
+      // Verify products are cascade-deleted
+      const dbProducts = await Product.find({ shopId });
+      expect(dbProducts.length).toBe(0);
+
+      // Verify reviews are cascade-deleted
+      const dbReviews = await Review.find({ $or: [{ shopId }, { productId }] });
+      expect(dbReviews.length).toBe(0);
+    });
+
+    it('should allow admin to delete any shop and cascade all associated data', async () => {
+      const res = await request(app)
+        .delete(`/api/shops/${shopId}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
+      expect(res.statusCode).toBe(200);
+
+      const dbShop = await Shop.findById(shopId);
+      expect(dbShop).toBeNull();
+    });
+
+    it('should return 404 for deleting non-existent shop', async () => {
+      const fakeId = new mongoose.Types.ObjectId();
+      const res = await request(app)
+        .delete(`/api/shops/${fakeId}`)
+        .set('Authorization', `Bearer ${ownerToken}`);
+
+      expect(res.statusCode).toBe(404);
+      expect(res.body.error).toBe('Shop not found');
     });
   });
 });

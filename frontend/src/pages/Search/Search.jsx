@@ -13,13 +13,26 @@ import AiSearchInsights from '../../components/search/AiSearchInsights';
 import AiSearchSuggestions from '../../components/search/AiSearchSuggestions';
 import './Search.css';
 
+const LEGACY_CATEGORY_ALIASES = {
+  ornaments: 'accessories',
+  hardware: 'home',
+  furniture: 'home'
+};
+
+function normalizeCategoryParam(cat) {
+  if (!cat) return 'all';
+  const lower = cat.toLowerCase().trim();
+  return LEGACY_CATEGORY_ALIASES[lower] || lower;
+}
+
 export default function Search() {
   const { location, coordinates } = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const queryParam = searchParams.get('q') || '';
-  const categoryParam = searchParams.get('cat') || 'all';
+  const rawCategoryParam = searchParams.get('cat') || 'all';
+  const categoryParam = normalizeCategoryParam(rawCategoryParam);
 
   const [searchQuery, setSearchQuery] = useState(queryParam);
   const [activeCategory, setActiveCategory] = useState(categoryParam);
