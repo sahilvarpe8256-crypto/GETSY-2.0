@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 /**
  * Fetch reviews for a specific shop or product
@@ -47,7 +47,7 @@ export async function createReview(reviewData, token) {
     if (res.ok) {
       return { success: true, review: data };
     }
-    return { success: false, error: data.error || 'Failed to submit review.' };
+    return { success: false, error: data.error || 'Failed to submit a review.' };
   } catch {
     return { success: false, error: 'Network error. Please try again.' };
   }
@@ -101,7 +101,7 @@ export async function deleteReview(reviewId, token) {
     if (res.ok) {
       return { success: true, message: data.message };
     }
-    return { success: false, error: data.error || 'Failed to delete review.' };
+    return { success: false, error: data.error || 'Failed to delete a review.' };
   } catch {
     return { success: false, error: 'Network error. Please try again.' };
   }
