@@ -22,6 +22,15 @@ const createProduct = async ({ userId, userRole, productData }) => {
     throw error;
   }
 
+  // Normalize stock and sizes
+  const stockVal = productData.stock !== undefined
+    ? Number(productData.stock)
+    : (productData.quantity !== undefined ? Number(productData.quantity) : 0);
+
+  const rawSizes = Array.isArray(productData.sizes)
+    ? productData.sizes
+    : (productData.size ? String(productData.size).split(',').map((s) => s.trim()).filter(Boolean) : []);
+
   const product = new Product({
     shopId: productData.shopId,
     name: productData.name ? productData.name.trim() : '',
@@ -29,8 +38,10 @@ const createProduct = async ({ userId, userRole, productData }) => {
     description: productData.description ? productData.description.trim() : '',
     price: Number(productData.price),
     image: productData.image ? productData.image.trim() : '',
-    stock: productData.stock !== undefined ? Number(productData.stock) : 0,
-    available: productData.available !== undefined ? Boolean(productData.available) : true
+    stock: isNaN(stockVal) ? 0 : Math.max(0, stockVal),
+    sizes: rawSizes,
+    size: productData.size ? String(productData.size).trim() : (rawSizes.join(', ')),
+    available: productData.available !== undefined ? Boolean(productData.available) : (stockVal > 0)
   });
 
   await product.save();
@@ -47,8 +58,17 @@ const getProducts = async ({ shopId, category, search }) => {
     filter.shopId = shopId;
   }
 
-  if (category) {
-    filter.category = new RegExp('^' + category.trim() + '$', 'i');
+  if (category && category !== 'all') {
+    const trimmed = category.trim().toLowerCase();
+    if (trimmed === 'home' || trimmed === 'home & living' || trimmed === 'home_living' || trimmed === 'home-living') {
+      filter.category = new RegExp('^(home|home & living|home_living|home-living|furniture)$', 'i');
+    } else if (trimmed === 'hardware') {
+      filter.category = new RegExp('^(hardware|hardware & tools|tools)$', 'i');
+    } else if (trimmed === 'ornaments') {
+      filter.category = new RegExp('^(ornaments|jewellery|jewelry)$', 'i');
+    } else {
+      filter.category = new RegExp('^' + category.trim() + '$', 'i');
+    }
   }
 
   if (search) {
@@ -132,8 +152,25 @@ const updateProduct = async ({ productId, userId, userRole, updateData }) => {
   if (updateData.description !== undefined) product.description = updateData.description.trim();
   if (updateData.price !== undefined) product.price = Number(updateData.price);
   if (updateData.image !== undefined) product.image = updateData.image.trim();
-  if (updateData.stock !== undefined) product.stock = Number(updateData.stock);
-  if (updateData.available !== undefined) product.available = Boolean(updateData.available);
+
+  if (updateData.stock !== undefined) {
+    product.stock = Math.max(0, Number(updateData.stock));
+  } else if (updateData.quantity !== undefined) {
+    product.stock = Math.max(0, Number(updateData.quantity));
+  }
+
+  if (updateData.sizes !== undefined) {
+    product.sizes = Array.isArray(updateData.sizes) ? updateData.sizes : String(updateData.sizes).split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  if (updateData.size !== undefined) {
+    product.size = String(updateData.size).trim();
+  }
+
+  if (updateData.available !== undefined) {
+    product.available = Boolean(updateData.available);
+  } else if (updateData.stock !== undefined || updateData.quantity !== undefined) {
+    product.available = product.stock > 0;
+  }
 
   await product.save();
   return product.toPublicJSON();
@@ -166,6 +203,17 @@ const deleteProduct = async ({ productId, userId, userRole }) => {
     error.statusCode = 403;
     throw error;
   }
+
+  // 1. Delete associated product reviews
+  const Review = require('../models/Review');
+  await Review.deleteMany({ productId });
+
+  // 2. Cascade delete/pull from all Wishlists in MongoDB
+  const Wishlist = require('../models/Wishlist');
+  await Wishlist.updateMany(
+    { products: productId.toString() },
+    { $pull: { products: productId.toString() } }
+  );
 
   await Product.findByIdAndDelete(productId);
   return { message: 'Product deleted successfully', id: productId };

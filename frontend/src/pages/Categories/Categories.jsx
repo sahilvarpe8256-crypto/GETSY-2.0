@@ -9,9 +9,13 @@ import ProductGrid from '../../components/product/ProductGrid';
 import './Categories.css';
 
 const LEGACY_CATEGORY_ALIASES = {
-  ornaments: 'accessories',
-  hardware: 'home',
-  furniture: 'home'
+  'home & living': 'home',
+  'home-living': 'home',
+  'home_living': 'home',
+  'furniture': 'home',
+  'jewellery': 'ornaments',
+  'jewelry': 'ornaments',
+  'tools': 'hardware'
 };
 
 function normalizeCategoryParam(cat) {

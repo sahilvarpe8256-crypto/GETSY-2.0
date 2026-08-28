@@ -39,4 +39,12 @@ router.put(
   shopController.updateShop
 );
 
+// DELETE /api/shops/:id (Delete shop - Owner / Admin only)
+router.delete(
+  '/:id',
+  protect,
+  requireRole('owner', 'admin'),
+  shopController.deleteShop
+);
+
 module.exports = router;

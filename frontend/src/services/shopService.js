@@ -146,18 +146,7 @@ export async function getShopById(id) {
   if (!id) return null;
   const strId = String(id).toLowerCase().trim();
 
-  // Check custom shops in localStorage first for instant lookup
-  const customShops = getLocalCustomShops();
-  if (customShops[id]) return customShops[id];
-  const customMatch = Object.values(customShops).find(
-    (s) =>
-      s &&
-      (String(s.id).toLowerCase() === strId ||
-        String(s.numericId) === strId ||
-        `shop-${s.numericId}`.toLowerCase() === strId)
-  );
-  if (customMatch) return customMatch;
-
+  // 1. Try fetching from backend API first for fresh MongoDB data
   try {
     const res = await fetchWithTimeout(`${API_BASE_URL}/shops/${id}`);
     if (res.ok) {
@@ -169,6 +158,18 @@ export async function getShopById(id) {
   } catch {
     // Graceful fallback
   }
+
+  // 2. Check custom shops in localStorage
+  const customShops = getLocalCustomShops();
+  if (customShops[id]) return customShops[id];
+  const customMatch = Object.values(customShops).find(
+    (s) =>
+      s &&
+      (String(s.id).toLowerCase() === strId ||
+        String(s.numericId) === strId ||
+        `shop-${s.numericId}`.toLowerCase() === strId)
+  );
+  if (customMatch) return customMatch;
 
   const merged = getAllMergedShops();
   return (
@@ -237,6 +238,42 @@ export async function updateShopProfile(shopId, updateData, token) {
 
   const updatedShop = await getShopById(shopId);
   return { success: true, shop: updatedShop, isLocal: true };
+}
+
+/**
+ * Delete a shop with complete cascade (Owner action)
+ */
+export async function deleteShop(shopId, token) {
+  if (!token) {
+    return { success: false, error: 'Authentication required' };
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/shops/${shopId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      // Remove from custom local storage if present
+      const custom = getLocalCustomShops();
+      if (custom[shopId]) {
+        delete custom[shopId];
+        try {
+          localStorage.setItem(LOCAL_SHOPS_KEY, JSON.stringify(custom));
+        } catch {
+          /* ignore */
+        }
+      }
+      return { success: true, message: data.message };
+    }
+    return { success: false, error: data.error || 'Failed to delete shop.' };
+  } catch {
+    return { success: false, error: 'Network error. Please try again.' };
+  }
 }
 
 export { API_BASE_URL };

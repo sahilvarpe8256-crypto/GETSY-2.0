@@ -153,7 +153,9 @@ export default function AddProduct() {
       clothing: 'Clothing',
       ornaments: 'Ornaments',
       accessories: 'Accessories',
-      hardware: 'Hardware'
+      hardware: 'Hardware',
+      home: 'Home & Living',
+      electronics: 'Electronics'
     };
 
     const newProductPayload = {
@@ -162,12 +164,14 @@ export default function AddProduct() {
       categoryLabel: categoryLabels[formData.category] || formData.category,
       price: Number(formData.price),
       originalPrice: formData.originalPrice ? Number(formData.originalPrice) : null,
+      stock: Number(formData.quantity) || 0,
       quantity: Number(formData.quantity) || 0,
       stockStatus: formData.stockStatus,
       inStorePickup: formData.inStorePickup,
       sizes: formData.sizes
         ? formData.sizes.split(',').map((s) => s.trim()).filter(Boolean)
         : [],
+      size: formData.sizes ? formData.sizes.trim() : '',
       image: formData.image.trim(),
       description: formData.description.trim(),
       shopId: ownerShopId,
@@ -254,6 +258,8 @@ export default function AddProduct() {
                 <option value="ornaments">Ornaments</option>
                 <option value="accessories">Accessories</option>
                 <option value="hardware">Hardware</option>
+                <option value="home">Home & Living</option>
+                <option value="electronics">Electronics</option>
               </select>
             </div>
 

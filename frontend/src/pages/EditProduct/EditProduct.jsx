@@ -57,16 +57,23 @@ export default function EditProduct() {
         }
 
         setProductData(prod);
-        const prodQty = prod.quantity !== undefined ? prod.quantity : (prod.stockStatus?.includes('Out') ? 0 : 12);
+        const prodQty = prod.stock !== undefined
+          ? prod.stock
+          : (prod.quantity !== undefined ? prod.quantity : 0);
+
+        const prodSizes = Array.isArray(prod.sizes) && prod.sizes.length > 0
+          ? prod.sizes.join(', ')
+          : (prod.size || (Array.isArray(prod.availableSizes) ? prod.availableSizes.join(', ') : ''));
+
         setFormData({
           name: prod.name || '',
           category: prod.category || 'footwear',
           price: prod.price || '',
           originalPrice: prod.originalPrice || '',
           quantity: prodQty,
-          stockStatus: prod.stockStatus || 'In Stock',
+          stockStatus: prod.stockStatus || (prodQty <= 0 ? 'Out of Stock' : (prodQty <= 5 ? `Low Stock (${prodQty} left)` : 'In Stock')),
           inStorePickup: prod.inStorePickup !== false,
-          sizes: Array.isArray(prod.sizes) ? prod.sizes.join(', ') : '',
+          sizes: prodSizes,
           image: prod.image || '',
           description: prod.description || ''
         });
@@ -182,7 +189,9 @@ export default function EditProduct() {
       clothing: 'Clothing',
       ornaments: 'Ornaments',
       accessories: 'Accessories',
-      hardware: 'Hardware'
+      hardware: 'Hardware',
+      home: 'Home & Living',
+      electronics: 'Electronics'
     };
 
     const updatedPayload = {
@@ -192,12 +201,14 @@ export default function EditProduct() {
       categoryLabel: categoryLabels[formData.category] || formData.category,
       price: Number(formData.price),
       originalPrice: formData.originalPrice ? Number(formData.originalPrice) : null,
+      stock: Number(formData.quantity) || 0,
       quantity: Number(formData.quantity) || 0,
       stockStatus: formData.stockStatus,
       inStorePickup: formData.inStorePickup,
       sizes: formData.sizes
         ? formData.sizes.split(',').map((s) => s.trim()).filter(Boolean)
         : [],
+      size: formData.sizes ? formData.sizes.trim() : '',
       image: formData.image.trim(),
       description: formData.description.trim()
     };
@@ -287,6 +298,8 @@ export default function EditProduct() {
                 <option value="ornaments">Ornaments</option>
                 <option value="accessories">Accessories</option>
                 <option value="hardware">Hardware</option>
+                <option value="home">Home & Living</option>
+                <option value="electronics">Electronics</option>
               </select>
             </div>
 

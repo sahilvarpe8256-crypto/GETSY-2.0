@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Store,
   MapPin,
@@ -11,17 +11,21 @@ import {
   Loader2,
   ShieldCheck,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Trash2,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getShopById, updateShopProfile } from '../../services/shopService';
+import { getShopById, updateShopProfile, deleteShop } from '../../services/shopService';
 import OwnerLayout from '../../components/owner/OwnerLayout';
 import { ShopImage } from '../../components/common/ShopCard';
 import LocationPickerMap from '../../components/common/LocationPickerMap';
 import './OwnerShopProfile.css';
 
 export default function OwnerShopProfile() {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
+  const navigate = useNavigate();
   const ownerShopId = user?.shopId || 'shop-1';
   const fileInputRef = useRef(null);
 
@@ -29,6 +33,10 @@ export default function OwnerShopProfile() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [successNotice, setSuccessNotice] = useState('');
   const [serverError, setServerError] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmStep, setDeleteConfirmStep] = useState(1);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const [shopData, setShopData] = useState(null);
   const [formData, setFormData] = useState({
@@ -169,7 +177,9 @@ export default function OwnerShopProfile() {
     setSaveLoading(true);
 
     const updatePayload = {
+      shopName: formData.name.trim(),
       name: formData.name.trim(),
+      shopType: formData.category,
       category: formData.category,
       description: formData.description.trim(),
       address: formData.address.trim(),
@@ -177,7 +187,7 @@ export default function OwnerShopProfile() {
       city: formData.city.trim(),
       openingHours: formData.openingHours.trim(),
       imageType: formData.imageType,
-      image: formData.image,
+      image: formData.image || '',
       coordinates: formData.coordinates
     };
 
@@ -194,6 +204,36 @@ export default function OwnerShopProfile() {
       setServerError('An unexpected error occurred while saving.');
     } finally {
       setSaveLoading(false);
+    }
+  };
+
+  const handleOpenDeleteModal = () => {
+    setDeleteConfirmStep(1);
+    setDeleteError('');
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirmStep === 1) {
+      setDeleteConfirmStep(2);
+      return;
+    }
+
+    setDeleteLoading(true);
+    setDeleteError('');
+
+    try {
+      const res = await deleteShop(ownerShopId, token);
+      if (res.success) {
+        logout();
+        navigate('/', { replace: true });
+      } else {
+        setDeleteError(res.error || 'Failed to delete shop.');
+      }
+    } catch {
+      setDeleteError('An unexpected error occurred while deleting shop.');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -450,6 +490,40 @@ export default function OwnerShopProfile() {
                 )}
               </button>
             </div>
+
+            {/* Danger Zone: Delete Shop */}
+            <div className="owner-danger-zone" style={{ marginTop: '36px', paddingTop: '24px', borderTop: '1px solid #fee2e2' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <AlertTriangle size={18} color="#dc2626" />
+                <h4 style={{ margin: 0, color: '#dc2626', fontSize: '1rem', fontWeight: '700' }}>Danger Zone</h4>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '16px' }}>
+                Permanently delete this shop, along with all its products, reviews, and catalog data. This action cannot be undone.
+              </p>
+              <button
+                type="button"
+                className="owner-delete-shop-btn"
+                onClick={handleOpenDeleteModal}
+                id="open-delete-shop-btn"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 18px',
+                  background: '#fef2f2',
+                  border: '1px solid #fca5a5',
+                  color: '#dc2626',
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Trash2 size={15} />
+                <span>Delete Shop</span>
+              </button>
+            </div>
           </form>
         </div>
 
@@ -508,6 +582,100 @@ export default function OwnerShopProfile() {
           </div>
         </div>
       </div>
+
+      {/* Delete Shop 2-Step Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="owner-modal-backdrop" onClick={() => !deleteLoading && setShowDeleteModal(false)}>
+          <div className="owner-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '460px' }}>
+            <div className="owner-modal-header">
+              <div className="owner-modal-danger-icon" style={{ background: '#fee2e2', color: '#dc2626', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AlertTriangle size={24} />
+              </div>
+              <button
+                type="button"
+                className="owner-modal-close"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleteLoading}
+                aria-label="Close dialog"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {deleteConfirmStep === 1 ? (
+              <>
+                <h3 className="owner-modal-title" style={{ marginTop: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#111827' }}>
+                  Delete Entire Shop & Catalog?
+                </h3>
+                <p className="owner-modal-desc" style={{ color: '#4b5563', fontSize: '0.92rem', lineHeight: '1.5', marginTop: '8px' }}>
+                  This will permanently delete <strong>{formData.name || 'your shop'}</strong>, all listed products, customer reviews, and catalog data from GETSY.
+                </p>
+                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '12px', marginTop: '12px', fontSize: '0.85rem', color: '#92400e' }}>
+                  <strong>Warning:</strong> This action cannot be undone. You will be logged out upon completion.
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="owner-modal-title" style={{ marginTop: '14px', fontSize: '1.25rem', fontWeight: '700', color: '#dc2626' }}>
+                  Final Confirmation Required
+                </h3>
+                <p className="owner-modal-desc" style={{ color: '#4b5563', fontSize: '0.92rem', lineHeight: '1.5', marginTop: '8px' }}>
+                  Are you absolutely sure you want to delete <strong>{formData.name || 'this shop'}</strong>? All products and reviews will be permanently removed from MongoDB.
+                </p>
+              </>
+            )}
+
+            {deleteError && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '10px', borderRadius: '8px', marginTop: '14px', fontSize: '0.85rem' }}>
+                <AlertCircle size={15} />
+                <span>{deleteError}</span>
+              </div>
+            )}
+
+            <div className="owner-modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
+              <button
+                type="button"
+                className="owner-modal-cancel-btn"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleteLoading}
+                style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid #d1d5db', background: '#fff', color: '#374151', fontWeight: '600', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="owner-modal-delete-btn"
+                onClick={handleConfirmDelete}
+                disabled={deleteLoading}
+                id="confirm-delete-shop-btn"
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#dc2626',
+                  color: '#fff',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                {deleteLoading ? (
+                  <>
+                    <Loader2 size={16} className="spin-anim" />
+                    <span>Deleting Shop...</span>
+                  </>
+                ) : deleteConfirmStep === 1 ? (
+                  <span>Continue to Confirm</span>
+                ) : (
+                  <span>Yes, Permanently Delete Shop</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </OwnerLayout>
   );
 }

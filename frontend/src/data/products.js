@@ -279,38 +279,6 @@ export const products = [
     ]
   },
   {
-    id: 'prod-9',
-    name: 'Fresh Organic Farm Apples (1kg)',
-    category: 'grocery',
-    categoryLabel: 'Grocery',
-    price: 180,
-    originalPrice: 220,
-    stock: 50,
-    stockStatus: 'In Stock',
-    shopId: 'shop-7',
-    shopName: 'Sangamner Supermart',
-    shopLocation: 'Sangamner Supermart, Station Road',
-    distance: '1.8 km',
-    imageType: 'grocery',
-    image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=600&auto=format&fit=crop&q=80',
-    verified: true,
-    inStorePickup: true,
-    availableSizes: ['1 kg pack', '2 kg pack'],
-    description: 'Crisp, sweet mountain-grown apples sourced directly from local orchard farms. Chemical-free and rich in fiber.',
-    attributes: { color: null, style: null, material: null, size: null },
-    rating: 4.9,
-    reviewsCount: 88,
-    reviews: [
-      {
-        id: 'rev-901',
-        userName: 'Neeta Kale',
-        rating: 5,
-        date: 'Today',
-        comment: 'Super fresh and juicy apples. Picked up within 15 mins at Station Road.'
-      }
-    ]
-  },
-  {
     id: 'prod-10',
     name: 'Wireless ANC Headphones',
     category: 'electronics',
@@ -345,8 +313,8 @@ export const products = [
   {
     id: 'prod-11',
     name: 'Precision Heavy-Duty Cordless Drill',
-    category: 'home',
-    categoryLabel: 'Home',
+    category: 'hardware',
+    categoryLabel: 'Hardware',
     price: 2899,
     originalPrice: 3600,
     stock: 6,
@@ -413,9 +381,13 @@ export function getProductById(id) {
 }
 
 const LEGACY_CATEGORY_ALIASES = {
-  ornaments: 'accessories',
-  hardware: 'home',
-  furniture: 'home'
+  'home & living': 'home',
+  'home-living': 'home',
+  'home_living': 'home',
+  'furniture': 'home',
+  'jewellery': 'ornaments',
+  'jewelry': 'ornaments',
+  'tools': 'hardware'
 };
 
 export function filterProducts({ category, search, shopId, minPrice, maxPrice, sortBy }) {
