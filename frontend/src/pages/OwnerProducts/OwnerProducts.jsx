@@ -240,22 +240,30 @@ export default function OwnerProducts() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          <span
-                            className={`owner-table-stock-badge ${
-                              (prod.stockStatus || '').toLowerCase().includes('low')
-                                ? 'badge-low'
-                                : (prod.stockStatus || '').toLowerCase().includes('out')
-                                ? 'badge-out'
-                                : 'badge-in'
-                            }`}
-                          >
-                            {prod.stockStatus || 'In Stock'}
-                          </span>
-                          {prod.quantity !== undefined && (
-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                              {prod.quantity} units
-                            </span>
-                          )}
+                          {(() => {
+                            const qty = prod.stock !== undefined
+                              ? prod.stock
+                              : (prod.quantity !== undefined ? prod.quantity : 0);
+                            const isOut = qty <= 0 || prod.available === false;
+                            const isLow = !isOut && qty <= 5;
+                            const badgeClass = isOut ? 'badge-out' : (isLow ? 'badge-low' : 'badge-in');
+                            const badgeText = isOut
+                              ? 'Out of Stock'
+                              : isLow
+                              ? `Low Stock (${qty})`
+                              : 'In Stock';
+
+                            return (
+                              <>
+                                <span className={`owner-table-stock-badge ${badgeClass}`}>
+                                  {badgeText}
+                                </span>
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                  Stock: {qty} {qty === 1 ? 'unit' : 'units'}
+                                </span>
+                              </>
+                            );
+                          })()}
                         </div>
                       </td>
                       <td>

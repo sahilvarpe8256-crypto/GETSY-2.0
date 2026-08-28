@@ -13,12 +13,8 @@ function formatCategory(cat) {
     ornaments: 'Ornaments',
     hardware: 'Hardware',
     electronics: 'Electronics',
-    groceries: 'Groceries',
-    grocery: 'Groceries',
-    beauty: 'Beauty',
-    sports: 'Sports',
-    books: 'Books',
-    home: 'Home'
+    home: 'Home & Living',
+    'home & living': 'Home & Living'
   };
   const lower = cat.toLowerCase().trim();
   return map[lower] || lower.charAt(0).toUpperCase() + lower.slice(1);

@@ -90,11 +90,18 @@ export async function getProducts(params = {}) {
     // Graceful fallback to merged local products
   }
 
+const LEGACY_CATEGORY_ALIASES = {
+  ornaments: 'accessories',
+  hardware: 'home',
+  furniture: 'home'
+};
+
   const all = getAllMergedProducts();
   let list = [...all];
 
   if (params.category && params.category !== 'all') {
-    const norm = params.category.toLowerCase().trim();
+    const raw = params.category.toLowerCase().trim();
+    const norm = LEGACY_CATEGORY_ALIASES[raw] || raw;
     list = list.filter((p) => p.category?.toLowerCase() === norm);
   }
 

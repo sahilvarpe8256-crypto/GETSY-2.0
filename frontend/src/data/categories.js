@@ -4,5 +4,7 @@ export const categories = [
   { id: 'clothing', label: 'Clothing' },
   { id: 'ornaments', label: 'Ornaments' },
   { id: 'accessories', label: 'Accessories' },
-  { id: 'hardware', label: 'Hardware' }
+  { id: 'hardware', label: 'Hardware' },
+  { id: 'home', label: 'Home & Living' },
+  { id: 'electronics', label: 'Electronics' }
 ];

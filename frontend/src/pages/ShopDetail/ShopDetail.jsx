@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -19,6 +19,9 @@ import { getShopById, getShops } from '../../services/shopService';
 import { getProducts } from '../../services/productService';
 import ProductCard from '../../components/product/ProductCard';
 import ShopCard, { ShopImage } from '../../components/common/ShopCard';
+import ProductReviews from '../../components/product/ProductReviews';
+import ShareModal from '../../components/common/ShareModal';
+import CategoryPill from '../../components/common/CategoryPill';
 import './ShopDetail.css';
 
 export default function ShopDetail() {
@@ -29,8 +32,9 @@ export default function ShopDetail() {
   const [products, setProducts] = useState([]);
   const [nearbyShops, setNearbyShops] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [directionsNotice, setDirectionsNotice] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
     let isMounted = true;
@@ -69,11 +73,24 @@ export default function ShopDetail() {
     };
   }, [id]);
 
-  const handleShare = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleShare = async () => {
+    const shareData = {
+      title: shop?.name || shop?.shopName || 'GETSY Local Store',
+      text: `Check out ${shop?.name || shop?.shopName || 'this store'} on GETSY!`,
+      url: window.location.href
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setIsShareOpen(true);
+        }
+      }
+    } else {
+      setIsShareOpen(true);
     }
   };
 
@@ -148,9 +165,10 @@ export default function ShopDetail() {
                 className="shop-share-btn"
                 onClick={handleShare}
                 title="Share store link"
+                id="shop-share-btn"
               >
-                {copied ? <Check size={16} color="var(--verified-green)" /> : <Share2 size={16} />}
-                <span>{copied ? 'Link Copied' : 'Share'}</span>
+                <Share2 size={16} />
+                <span>Share</span>
               </button>
             </div>
           </div>
@@ -164,8 +182,11 @@ export default function ShopDetail() {
             {/* Storefront Visual Image (Not product image) */}
             <div className="shop-hero-image-wrap">
               <ShopImage
-                type={shop.imageType}
+                type={shop.category || shop.shopType || shop.imageType}
+                imageType={shop.imageType || shop.category || shop.shopType}
                 name={shop.name || shop.shopName}
+                shopName={shop.name || shop.shopName}
+                image={shop.image || shop.shopImage || shop.photo}
               />
 
               <div className="shop-hero-badge-overlay">
@@ -290,6 +311,41 @@ export default function ShopDetail() {
             </span>
           </div>
 
+          {/* Shop Category Tabs */}
+          {(() => {
+            const catMap = new Map();
+            products.forEach((p) => {
+              if (p.category) {
+                const raw = String(p.category).toLowerCase().trim();
+                const norm = raw === 'home & living' || raw === 'home_living' || raw === 'home-living' ? 'home' : raw;
+                const label = p.categoryLabel || (norm === 'home' ? 'Home & Living' : (norm.charAt(0).toUpperCase() + norm.slice(1)));
+                if (!catMap.has(norm)) catMap.set(norm, label);
+              }
+            });
+            const catList = Array.from(catMap.entries()).map(([id, label]) => ({ id, label }));
+
+            if (catList.length > 1) {
+              return (
+                <div className="shop-category-pills" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+                  <CategoryPill
+                    label="All Products"
+                    isActive={selectedCategory === 'all'}
+                    onClick={() => setSelectedCategory('all')}
+                  />
+                  {catList.map((cat) => (
+                    <CategoryPill
+                      key={cat.id}
+                      label={cat.label}
+                      isActive={selectedCategory === cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                    />
+                  ))}
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {/* Products Grid */}
           {products.length === 0 ? (
             <div className="shop-products-empty">
@@ -298,12 +354,45 @@ export default function ShopDetail() {
               <p>This store has not added products to their online catalog yet. Please check back soon or visit in person.</p>
             </div>
           ) : (
-            <div className="shop-products-grid">
-              {products.map((product) => (
-                <ProductCard key={product.id || product._id} product={product} />
-              ))}
-            </div>
+            (() => {
+              const displayed = selectedCategory === 'all'
+                ? products
+                : products.filter((p) => {
+                    const raw = String(p.category || '').toLowerCase().trim();
+                    const norm = raw === 'home & living' || raw === 'home_living' || raw === 'home-living' ? 'home' : raw;
+                    return norm === selectedCategory;
+                  });
+
+              if (displayed.length === 0) {
+                return (
+                  <div className="shop-products-empty">
+                    <Package size={36} className="shop-products-empty-icon" />
+                    <h3>No products in this category</h3>
+                    <p>No products found under the selected category in this store.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="shop-products-grid">
+                  {displayed.map((product) => (
+                    <ProductCard key={product.id || product._id} product={product} />
+                  ))}
+                </div>
+              );
+            })()
           )}
+        </div>
+      </section>
+
+      {/* Customer Reviews Section */}
+      <section className="shop-reviews-section">
+        <div className="container">
+          <ProductReviews
+            shopId={shop.id || shop._id}
+            title="Customer Reviews & Ratings"
+            entityName="Store"
+          />
         </div>
       </section>
 
@@ -330,6 +419,16 @@ export default function ShopDetail() {
           </div>
         </section>
       )}
+
+      {/* Share Modal Dialog */}
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        title={shop.name || shop.shopName || 'Store Profile'}
+        text={`Check out ${shop.name || shop.shopName} on GETSY!`}
+        url={window.location.href}
+        entityType="shop"
+      />
     </main>
   );
 }

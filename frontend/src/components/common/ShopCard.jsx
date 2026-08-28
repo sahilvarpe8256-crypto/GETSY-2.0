@@ -1,18 +1,21 @@
+import { useState } from 'react';
 import { MapPin, CheckCircle, Star, Package, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import './ShopCard.css';
 
 export function ShopImage({ type, name, imageType, shopName, image }) {
+  const [hasError, setHasError] = useState(false);
   const finalType = (type || imageType || 'footwear').toLowerCase().trim();
   const finalName = name || shopName || '';
 
-  if (image) {
+  if (image && !hasError) {
     return (
       <img
         src={image}
         alt={finalName || 'Storefront'}
         className="shop-card-svg"
         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        onError={() => setHasError(true)}
       />
     );
   }
@@ -237,8 +240,11 @@ export default function ShopCard({ shop, onClick }) {
       {/* Image area */}
       <div className="shop-card-image">
         <ShopImage
-          type={shop.imageType}
+          type={shop.category || shop.shopType || shop.imageType}
+          imageType={shop.imageType || shop.category || shop.shopType}
           name={shop.name || shop.shopName}
+          shopName={shop.name || shop.shopName}
+          image={shop.image || shop.shopImage || shop.photo}
         />
 
         {/* Category badge */}

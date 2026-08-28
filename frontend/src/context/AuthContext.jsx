@@ -1,5 +1,12 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getStoredUser, getStoredToken, loginUser, registerUser, clearAuthSession } from '../services/authService';
+import {
+  getStoredUser,
+  getStoredToken,
+  loginUser,
+  registerUser,
+  clearAuthSession,
+  fetchCurrentUser
+} from '../services/authService';
 
 const AuthContext = createContext();
 
@@ -12,6 +19,21 @@ export function AuthProvider({ children }) {
     role: 'customer', // 'customer' | 'owner'
     onSuccessCallback: null
   });
+
+  // Validate session on initial app mount
+  useEffect(() => {
+    const savedToken = getStoredToken();
+    if (savedToken && !savedToken.startsWith('mock-')) {
+      fetchCurrentUser(savedToken).then((validatedUser) => {
+        if (!validatedUser) {
+          setUser(null);
+          setToken(null);
+        } else {
+          setUser(validatedUser);
+        }
+      });
+    }
+  }, []);
 
   const openAuthModal = (options = {}) => {
     setAuthModalConfig({

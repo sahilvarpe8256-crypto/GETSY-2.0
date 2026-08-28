@@ -1,6 +1,6 @@
 /* ============================================
    LocationPickerMap Styles
-   GETSY Design System
+   GETSY Design System - Leaflet Integrated
    ============================================ */
 
 .location-picker-container {
@@ -25,9 +25,9 @@
   background: var(--bg-white);
   border: 1.5px solid var(--primary);
   color: var(--primary);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: var(--radius-pill);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -47,104 +47,109 @@
   color: var(--text-muted);
 }
 
-.location-picker-error {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #fef2f2;
-  color: #ef4444;
-  font-size: 12px;
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid #fee2e2;
-}
-
-/* Map Canvas */
-.location-picker-canvas {
+/* Leaflet Map Wrap */
+.location-picker-map-wrap {
   position: relative;
   width: 100%;
   border-radius: var(--radius-md);
   overflow: hidden;
   border: 1.5px solid var(--border-light);
-  cursor: crosshair;
-  box-shadow: inset 0 2px 6px rgba(0,0,0,0.04);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
-.location-picker-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
+.location-picker-leaflet-map {
   width: 100%;
   height: 100%;
-  pointer-events: none;
+  background: #e5e7eb;
 }
 
-/* Anchor Dots */
-.location-picker-anchor-dot {
-  position: absolute;
-  transform: translate(-50%, -50%);
+/* Custom Leaflet Pin Styling */
+.getsy-custom-map-pin {
+  background: transparent;
+  border: none;
+}
+
+.getsy-leaflet-pin-wrapper {
+  position: relative;
+  width: 36px;
+  height: 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  cursor: pointer;
-  z-index: 10;
+  cursor: grab;
+}
+
+.getsy-leaflet-pin-wrapper:active {
+  cursor: grabbing;
+}
+
+.getsy-leaflet-pin-bubble {
+  width: 34px;
+  height: 34px;
+  background: #ffffff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(14, 140, 127, 0.4), 0 2px 4px rgba(0,0,0,0.1);
+  border: 2px solid var(--primary);
   transition: transform 0.15s ease;
 }
 
-.location-picker-anchor-dot:hover {
-  transform: translate(-50%, -50%) scale(1.15);
+.getsy-leaflet-pin-bubble svg {
+  transform: rotate(45deg);
 }
 
-.anchor-dot {
-  width: 8px;
-  height: 8px;
+.getsy-leaflet-pin-bubble:hover {
+  transform: rotate(-45deg) scale(1.1);
+}
+
+.getsy-leaflet-pin-shadow {
+  width: 14px;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.25);
   border-radius: 50%;
-  background: #64748b;
-  border: 2px solid #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-
-.anchor-label {
-  font-size: 9.5px;
-  font-weight: 700;
-  color: var(--text-heading);
-  background: rgba(255, 255, 255, 0.9);
-  padding: 1px 5px;
-  border-radius: 3px;
-  white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-/* Selected Pin */
-.location-picker-pin {
   position: absolute;
-  transform: translate(-50%, -100%);
+  bottom: 0;
+  filter: blur(1px);
+}
+
+/* Floating controls */
+.location-picker-ctrls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.location-picker-ctrl-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
   align-items: center;
-  pointer-events: none;
-  z-index: 20;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  justify-content: center;
+  background: transparent;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-heading);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.12s ease;
 }
 
-.location-picker-pin-bubble {
-  filter: drop-shadow(0 4px 8px rgba(14, 140, 127, 0.4));
-  animation: pinBounce 0.4s ease;
-}
-
-@keyframes pinBounce {
-  0% { transform: translateY(-12px); }
-  60% { transform: translateY(2px); }
-  100% { transform: translateY(0); }
-}
-
-.location-picker-pin-shadow {
-  width: 12px;
-  height: 4px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.25);
-  margin-top: -2px;
+.location-picker-ctrl-btn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
 }
 
 /* Footer Bar */
@@ -179,50 +184,8 @@
   font-size: 11px;
 }
 
-/* Pills Row */
-.location-picker-pills-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-}
-
-.pills-label {
+.geocoding-spinner {
+  font-weight: 400;
   font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.pills-scroll {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  overflow-x: auto;
-}
-
-.picker-pill-btn {
-  background: var(--bg-white);
-  border: 1px solid var(--border-light);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-body);
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.picker-pill-btn:hover {
-  background: var(--primary-light);
   color: var(--primary);
-  border-color: var(--primary);
-}
-
-.picker-pill-btn--active {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
 }

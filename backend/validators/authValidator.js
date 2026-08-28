@@ -20,22 +20,15 @@ const registerValidationRules = [
     .withMessage('Password must be at least 6 characters long'),
   body('role')
     .optional()
-    .isIn(['customer', 'owner', 'admin'])
-    .withMessage('Invalid role specified')
+    .isIn(['customer', 'owner'])
+    .withMessage('Invalid role specified. Only customer and owner roles are allowed.')
 ];
 
 // Validation rules for login
 const loginValidationRules = [
-  body('email')
-    .trim()
-    .notEmpty()
-    .withMessage('Email is required')
-    .isEmail()
-    .withMessage('Please enter a valid email address')
-    .normalizeEmail(),
-  body('password')
-    .notEmpty()
-    .withMessage('Password is required')
+  body('email').isEmail().withMessage('Please provide a valid email address').normalizeEmail(),
+  body('password').notEmpty().withMessage('Password is required'),
+  body('role').optional().isIn(['customer', 'owner']).withMessage('Role must be either customer or owner')
 ];
 
 // Middleware to check validation results and return standard error format

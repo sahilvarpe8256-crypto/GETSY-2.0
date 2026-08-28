@@ -35,9 +35,13 @@ const KNOWN_LOCATIONS = {
 /**
  * Category synonym mapping for client-side rule-based fallback parser.
  * Maps common natural-language terms to normalized category IDs.
+ *
+ * CANONICAL SOURCE: ai/src/data/categories.js
+ * Inverted index of CATEGORIES: synonym -> canonicalCategory
  */
 export const CATEGORY_SYNONYMS = {
-  // Footwear
+  // footwear
+  footwear: 'footwear',
   shoe: 'footwear',
   shoes: 'footwear',
   sneaker: 'footwear',
@@ -54,19 +58,21 @@ export const CATEGORY_SYNONYMS = {
   loafers: 'footwear',
   chappal: 'footwear',
   chappals: 'footwear',
-  footwear: 'footwear',
   jogger: 'footwear',
   joggers: 'footwear',
   floater: 'footwear',
   floaters: 'footwear',
+  'flip-flop': 'footwear',
+  'flip-flops': 'footwear',
 
-  // Clothing
+  // clothing
+  clothing: 'clothing',
   shirt: 'clothing',
   shirts: 'clothing',
-  tshirt: 'clothing',
-  tshirts: 'clothing',
   't-shirt': 'clothing',
   't-shirts': 'clothing',
+  tshirt: 'clothing',
+  tshirts: 'clothing',
   pant: 'clothing',
   pants: 'clothing',
   trouser: 'clothing',
@@ -94,66 +100,13 @@ export const CATEGORY_SYNONYMS = {
   shorts: 'clothing',
   blazer: 'clothing',
   blazers: 'clothing',
-  clothing: 'clothing',
   clothes: 'clothing',
   garment: 'clothing',
   garments: 'clothing',
   apparel: 'clothing',
 
-  // Accessories
-  belt: 'accessories',
-  belts: 'accessories',
-  wallet: 'accessories',
-  wallets: 'accessories',
-  watch: 'accessories',
-  watches: 'accessories',
-  sunglasses: 'accessories',
-  sunglass: 'accessories',
-  bag: 'accessories',
-  bags: 'accessories',
-  purse: 'accessories',
-  purses: 'accessories',
-  backpack: 'accessories',
-  backpacks: 'accessories',
-  handbag: 'accessories',
-  handbags: 'accessories',
-  cap: 'accessories',
-  caps: 'accessories',
-  hat: 'accessories',
-  hats: 'accessories',
-  scarf: 'accessories',
-  scarves: 'accessories',
-  tie: 'accessories',
-  ties: 'accessories',
-  accessory: 'accessories',
-  accessories: 'accessories',
-
-  // Ornaments / Jewellery
-  ornament: 'ornaments',
-  ornaments: 'ornaments',
-  jewellery: 'ornaments',
-  jewelry: 'ornaments',
-  necklace: 'ornaments',
-  necklaces: 'ornaments',
-  ring: 'ornaments',
-  rings: 'ornaments',
-  bangle: 'ornaments',
-  bangles: 'ornaments',
-  earring: 'ornaments',
-  earrings: 'ornaments',
-  bracelet: 'ornaments',
-  bracelets: 'ornaments',
-
-  // Hardware
-  hardware: 'hardware',
-  tool: 'hardware',
-  tools: 'hardware',
-  drill: 'hardware',
-  paint: 'hardware',
-  screw: 'hardware',
-  hammer: 'hardware',
-
-  // Electronics
+  // electronics
+  electronics: 'electronics',
   phone: 'electronics',
   phones: 'electronics',
   mobile: 'electronics',
@@ -178,10 +131,136 @@ export const CATEGORY_SYNONYMS = {
   speakers: 'electronics',
   television: 'electronics',
   tv: 'electronics',
-  electronics: 'electronics',
   electronic: 'electronics',
   gadget: 'electronics',
-  gadgets: 'electronics'
+  gadgets: 'electronics',
+
+  // accessories
+  accessories: 'accessories',
+  wallet: 'accessories',
+  wallets: 'accessories',
+  belt: 'accessories',
+  belts: 'accessories',
+  watch: 'accessories',
+  watches: 'accessories',
+  sunglasses: 'accessories',
+  sunglass: 'accessories',
+  bag: 'accessories',
+  bags: 'accessories',
+  purse: 'accessories',
+  purses: 'accessories',
+  backpack: 'accessories',
+  backpacks: 'accessories',
+  handbag: 'accessories',
+  handbags: 'accessories',
+  cap: 'accessories',
+  caps: 'accessories',
+  hat: 'accessories',
+  hats: 'accessories',
+  scarf: 'accessories',
+  scarves: 'accessories',
+  tie: 'accessories',
+  ties: 'accessories',
+  accessory: 'accessories',
+  jewellery: 'accessories',
+  jewelry: 'accessories',
+  bracelet: 'accessories',
+  bracelets: 'accessories',
+  necklace: 'accessories',
+  necklaces: 'accessories',
+  ring: 'accessories',
+  rings: 'accessories',
+
+  // grocery
+  grocery: 'grocery',
+  groceries: 'grocery',
+  vegetable: 'grocery',
+  vegetables: 'grocery',
+  fruit: 'grocery',
+  fruits: 'grocery',
+  rice: 'grocery',
+  wheat: 'grocery',
+  dal: 'grocery',
+  oil: 'grocery',
+  sugar: 'grocery',
+  salt: 'grocery',
+  spice: 'grocery',
+  spices: 'grocery',
+  atta: 'grocery',
+  flour: 'grocery',
+  milk: 'grocery',
+  bread: 'grocery',
+  egg: 'grocery',
+  eggs: 'grocery',
+
+  // beauty
+  beauty: 'beauty',
+  cosmetic: 'beauty',
+  cosmetics: 'beauty',
+  makeup: 'beauty',
+  skincare: 'beauty',
+  lipstick: 'beauty',
+  foundation: 'beauty',
+  cream: 'beauty',
+  lotion: 'beauty',
+  shampoo: 'beauty',
+  conditioner: 'beauty',
+  perfume: 'beauty',
+  fragrance: 'beauty',
+  serum: 'beauty',
+
+  // sports
+  sports: 'sports',
+  sport: 'sports',
+  cricket: 'sports',
+  football: 'sports',
+  badminton: 'sports',
+  bat: 'sports',
+  ball: 'sports',
+  racket: 'sports',
+  gym: 'sports',
+  fitness: 'sports',
+  yoga: 'sports',
+  dumbbell: 'sports',
+  treadmill: 'sports',
+  sportswear: 'sports',
+
+  // books
+  books: 'books',
+  book: 'books',
+  novel: 'books',
+  novels: 'books',
+  textbook: 'books',
+  textbooks: 'books',
+  notebook: 'books',
+  notebooks: 'books',
+  stationery: 'books',
+  pen: 'books',
+  pens: 'books',
+  pencil: 'books',
+  pencils: 'books',
+  diary: 'books',
+  diaries: 'books',
+
+  // home
+  home: 'home',
+  furniture: 'home',
+  sofa: 'home',
+  table: 'home',
+  chair: 'home',
+  bed: 'home',
+  mattress: 'home',
+  curtain: 'home',
+  curtains: 'home',
+  pillow: 'home',
+  pillows: 'home',
+  lamp: 'home',
+  lamps: 'home',
+  decor: 'home',
+  decoration: 'home',
+  kitchen: 'home',
+  utensil: 'home',
+  utensils: 'home'
 };
 
 const ATTRIBUTE_VALUES = {
@@ -190,7 +269,7 @@ const ATTRIBUTE_VALUES = {
     'grey', 'gray', 'pink', 'orange', 'purple', 'beige', 'maroon',
     'navy', 'teal', 'cream', 'olive'
   ],
-  styles: ['formal', 'casual', 'sports', 'party', 'ethnic', 'traditional', 'vintage', 'modern', 'classic', 'designer'],
+  styles: ['formal', 'casual', 'sports', 'sporty', 'party', 'ethnic', 'traditional', 'vintage', 'modern', 'classic', 'designer'],
   materials: [
     'leather', 'cotton', 'denim', 'silk', 'gold', 'silver',
     'wool', 'woolen', 'linen', 'polyester', 'nylon', 'velvet',
@@ -399,7 +478,7 @@ export function parseQuery(query = '', latitude, longitude) {
   // 1. Intent
   const isShopSearch = /\b(shops|shop|stores|store|outlets|outlet|dealers|dealer|showrooms|showroom|market|markets|boutique|boutiques)\b/i.test(text);
   const isBrowse = /^\s*(browse|explore|show all|view all|list all)\b/i.test(originalQuery.trim()) ||
-    /^\s*(show me|view|browse|explore)\s+(all\s+)?(footwear|clothing|electronics|accessories|ornaments|hardware|groceries|products|items)\s*$/i.test(originalQuery.trim());
+    /^\s*(show me|view|browse|explore)\s+(all\s+)?(footwear|clothing|electronics|accessories|grocery|beauty|sports|books|home|products|items)\s*$/i.test(originalQuery.trim());
 
   if (isShopSearch) structuredQuery.intent = 'shop_search';
   else if (isBrowse) structuredQuery.intent = 'browse';
@@ -626,7 +705,7 @@ export function parseQuery(query = '', latitude, longitude) {
   }
 
   // 6. Filler Phrases Removal
-  const fillerPattern = /\b(i need|i want|looking for|search for|find me|show me|get me|please find|tell me|bring me|give me|can you find|can you show|near me|nearby|search|find)\b/gi;
+  const fillerPattern = /\b(i am looking for|i'm looking for|i need|i want|looking for|search for|find me|show me|get me|please find|tell me|bring me|give me|can you find|can you show|near me|nearby|search|find)\b/gi;
   text = text.replace(fillerPattern, ' ');
 
   // 7. Keywords

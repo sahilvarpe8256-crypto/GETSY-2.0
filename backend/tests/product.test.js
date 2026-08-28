@@ -5,6 +5,7 @@ const app = require('../app');
 const User = require('../models/User');
 const Shop = require('../models/Shop');
 const Product = require('../models/Product');
+const generateToken = require('../utils/generateToken');
 
 let mongoServer;
 
@@ -100,17 +101,16 @@ describe('Phase 4 Product Foundation APIs', () => {
       });
     customerToken = customerRes.body.token;
 
-    // Create Admin
-    const adminRes = await request(app)
-      .post('/api/auth/register')
-      .send({
-        name: 'Admin One',
-        email: 'admin@example.com',
-        password: 'password123',
-        role: 'admin'
-      });
-    adminToken = adminRes.body.token;
-    adminUser = adminRes.body.user;
+    // Create Admin directly in database
+    const adminDoc = new User({
+      name: 'Admin One',
+      email: 'admin@example.com',
+      passwordHash: 'password123',
+      role: 'admin'
+    });
+    await adminDoc.save();
+    adminToken = generateToken(adminDoc._id, 'admin');
+    adminUser = adminDoc.toPublicJSON();
   });
 
   describe('POST /api/products (Product Creation)', () => {
@@ -138,6 +138,7 @@ describe('Phase 4 Product Foundation APIs', () => {
       expect(res.body.category).toBe('Footwear');
       expect(res.body.price).toBe(1999);
       expect(res.body.stock).toBe(20);
+      expect(res.body.quantity).toBe(20);
       expect(res.body.available).toBe(true);
     });
 
@@ -403,20 +404,24 @@ describe('Phase 4 Product Foundation APIs', () => {
       prodId = res.body.id;
     });
 
-    it('should allow shop owner to update product details', async () => {
+    it('should allow shop owner to update product details including quantity and sizes', async () => {
       const res = await request(app)
         .put(`/api/products/${prodId}`)
         .set('Authorization', `Bearer ${ownerToken}`)
         .send({
           name: 'Updated Product Name',
           price: 250,
-          stock: 50
+          quantity: 8,
+          sizes: ['Large', 'XL'],
+          size: 'Large, XL'
         });
 
       expect(res.statusCode).toBe(200);
       expect(res.body.name).toBe('Updated Product Name');
       expect(res.body.price).toBe(250);
-      expect(res.body.stock).toBe(50);
+      expect(res.body.stock).toBe(8);
+      expect(res.body.quantity).toBe(8);
+      expect(res.body.sizes).toEqual(['Large', 'XL']);
     });
 
     it('should allow admin user to update any product', async () => {

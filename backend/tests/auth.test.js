@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const app = require('../app');
 const User = require('../models/User');
+const Shop = require('../models/Shop');
 
 let mongoServer;
 
@@ -23,6 +24,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await User.deleteMany({});
+  await Shop.deleteMany({});
 });
 
 describe('POST /api/auth/register', () => {
@@ -108,7 +110,7 @@ describe('POST /api/auth/register', () => {
     expect(res.body.error).toMatch(/6 characters/i);
   });
 
-  it('should return 400 when registering with a duplicate email', async () => {
+  it('should return 409 when registering with a duplicate email', async () => {
     await request(app)
       .post('/api/auth/register')
       .send({
@@ -125,8 +127,61 @@ describe('POST /api/auth/register', () => {
         password: 'password456'
       });
 
+    expect(res.statusCode).toBe(409);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toMatch(/already exists/i);
+  });
+
+  it('should reject registration with role=admin returning 400', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Admin Attempter',
+        email: 'adminhack@example.com',
+        password: 'password123',
+        role: 'admin'
+      });
+
     expect(res.statusCode).toBe(400);
     expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toMatch(/Invalid role/i);
+  });
+
+  it('should reject registration with arbitrary invalid role returning 400', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Hacker User',
+        email: 'hacker@example.com',
+        password: 'password123',
+        role: 'superadmin'
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  it('should reject existing owner email registering as customer with 409 conflict', async () => {
+    await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Real Owner',
+        email: 'owner@example.com',
+        password: 'password123',
+        role: 'owner',
+        shopData: { shopName: 'Owner Shop' }
+      });
+
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Imposter Customer',
+        email: 'owner@example.com',
+        password: 'password123',
+        role: 'customer'
+      });
+
+    expect(res.statusCode).toBe(409);
     expect(res.body.error).toMatch(/already exists/i);
   });
 });
@@ -197,6 +252,78 @@ describe('POST /api/auth/login', () => {
     expect(res.body.error).toBe('Invalid email or password');
   });
 
+  it('should reject owner email when customer role is selected during login', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'login@example.com',
+        password: 'correctpassword',
+        role: 'customer'
+      });
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toBe('No customer is registered with this email.');
+  });
+
+  it('should reject customer email when owner role is selected during login', async () => {
+    await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Regular Customer',
+        email: 'customer@example.com',
+        password: 'correctpassword',
+        role: 'customer'
+      });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'customer@example.com',
+        password: 'correctpassword',
+        role: 'owner'
+      });
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toHaveProperty('error');
+    expect(res.body.error).toBe('No shop owner is registered with this email.');
+  });
+
+  it('should succeed when owner logs in selecting owner role', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'login@example.com',
+        password: 'correctpassword',
+        role: 'owner'
+      });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.user.role).toBe('owner');
+  });
+
+  it('should succeed when customer logs in selecting customer role', async () => {
+    await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Customer 2',
+        email: 'customer2@example.com',
+        password: 'correctpassword',
+        role: 'customer'
+      });
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'customer2@example.com',
+        password: 'correctpassword',
+        role: 'customer'
+      });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.user.role).toBe('customer');
+  });
+
   it('should return 400 when missing email or password field', async () => {
     const res = await request(app)
       .post('/api/auth/login')
@@ -255,5 +382,83 @@ describe('GET /api/auth/me', () => {
     expect(res.statusCode).toBe(401);
     expect(res.body).toHaveProperty('error');
     expect(res.body.error).toBe('Invalid authentication token');
+  });
+
+  it('should return real shopId and shopName for an authenticated owner', async () => {
+    const ownerReg = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Shop Owner User',
+        email: 'owner-me@example.com',
+        password: 'password123',
+        role: 'owner',
+        shopData: {
+          shopName: 'Pune Electronics Store',
+          shopCategory: 'electronics',
+          shopAddress: 'FC Road, Pune',
+          coordinates: { lat: 18.5204, lng: 73.8567 }
+        }
+      });
+
+    expect(ownerReg.statusCode).toBe(201);
+    expect(ownerReg.body.user).toHaveProperty('shopId');
+    expect(ownerReg.body.user.shopName).toBe('Pune Electronics Store');
+
+    const res = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${ownerReg.body.token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.user).toHaveProperty('shopId');
+    expect(res.body.user.shopId).toBe(ownerReg.body.user.shopId);
+    expect(res.body.user.shopName).toBe('Pune Electronics Store');
+  });
+});
+
+describe('Owner registration with Shop creation', () => {
+  it('should create a real Shop document in MongoDB on owner registration', async () => {
+    const ownerPayload = {
+      name: 'Ramesh Patel',
+      email: 'ramesh.shoes@example.com',
+      password: 'password123',
+      role: 'owner',
+      shopData: {
+        shopName: 'Ramesh Footwear & Leather',
+        shopCategory: 'footwear',
+        shopAddress: '12 Paud Road, Kothrud',
+        shopLandmark: 'Near Metro Station',
+        shopGst: '27AAAAA0000A1Z5',
+        coordinates: { lat: 18.5074, lng: 73.8077 }
+      }
+    };
+
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send(ownerPayload);
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body.user.role).toBe('owner');
+    expect(res.body.user).toHaveProperty('shopId');
+    expect(res.body.user.shopName).toBe('Ramesh Footwear & Leather');
+
+    // Verify Shop document in MongoDB
+    const shopInDb = await Shop.findById(res.body.user.shopId);
+    expect(shopInDb).not.toBeNull();
+    expect(shopInDb.shopName).toBe('Ramesh Footwear & Leather');
+    expect(shopInDb.shopType).toBe('footwear');
+    expect(shopInDb.ownerId.toString()).toBe(res.body.user.id);
+    expect(shopInDb.location.coordinates).toEqual([73.8077, 18.5074]);
+
+    // Verify owner can log in and receive the same real shopId
+    const loginRes = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'ramesh.shoes@example.com',
+        password: 'password123'
+      });
+
+    expect(loginRes.statusCode).toBe(200);
+    expect(loginRes.body.user.shopId).toBe(res.body.user.shopId);
+    expect(loginRes.body.user.shopName).toBe('Ramesh Footwear & Leather');
   });
 });
