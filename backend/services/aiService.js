@@ -1,6 +1,6 @@
 const Product = require('../models/Product');
 const Shop = require('../models/Shop');
-const { parseQuery: coreParseQuery } = require('../../ai/src');
+const { parseQuery: coreParseQuery } = require('../ai');
 
 /**
  * Parses a natural language search query using the standalone /ai NLP engine.
